@@ -1,73 +1,106 @@
-# React + TypeScript + Vite
+# My Local Notion
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A local-first, browser-only Notion clone built with modern web technologies. Create documents and Kanban boards that persist entirely in your browser—no backend, no accounts, no cloud sync required.
 
-Currently, two official plugins are available:
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Features
 
-## React Compiler
+- **📝 Rich Text Editor** — Notion-style block editing powered by BlockNote with full markdown support
+- **📋 Kanban Boards** — Drag-and-drop task management with columns and cards
+- **🗂️ Hierarchical Pages** — Organize pages in nested structures with unlimited depth
+- **🔍 Fast Search** — Quick find any page with ⌘+K fuzzy search
+- **🌓 Dark Mode** — Light, dark, and system theme support with no FOUC
+- **💾 Local-First** — All data stored in IndexedDB, works completely offline
+- **⌨️ Keyboard Shortcuts** — Navigate efficiently with keyboard-first design
+- **🎨 Modern UI** — Clean, responsive interface built with shadcn/ui and Tailwind CSS
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🚀 Quick Start
 
-## Expanding the ESLint configuration
+```bash
+# Install dependencies (using pnpm)
+pnpm install
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+# Start development server
+pnpm dev
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# Build for production
+pnpm build
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Preview production build
+pnpm preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Visit `http://localhost:5173` to start using the app.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🛠️ Tech Stack
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Layer          | Library                      | Purpose                          |
+| -------------- | ---------------------------- | -------------------------------- |
+| Framework      | React 19 + TypeScript 5.9    | UI & type safety                 |
+| Bundler        | Vite 7                       | Dev server & builds              |
+| Styling        | Tailwind CSS v4 + shadcn/ui  | Utility-first CSS + components   |
+| Block Editor   | BlockNote                    | Notion-like block editing        |
+| Persistence    | Dexie 4 (IndexedDB)          | Client-side database             |
+| Routing        | React Router v7              | SPA navigation                   |
+| State          | Zustand 5                    | UI state management              |
+| Drag & Drop    | @dnd-kit                     | Kanban drag-and-drop             |
+
+## ⌨️ Keyboard Shortcuts
+
+- `⌘+K` / `Ctrl+K` — Open search dialog
+- `⌘+\` / `Ctrl+\` — Toggle sidebar
+- `⌘+N` / `Ctrl+N` — Create new page
+- `⌘+Shift+L` / `Ctrl+Shift+L` — Cycle theme (light/dark/system)
+
+## 📁 Project Structure
+
 ```
+src/
+├── components/
+│   ├── editor/         # BlockNote editor and page header
+│   ├── kanban/         # Kanban board components
+│   ├── layout/         # App shell and sidebar
+│   ├── shared/         # Reusable components (search, breadcrumbs, etc.)
+│   └── ui/             # shadcn/ui primitives
+├── lib/
+│   ├── db.ts           # Dexie database schema
+│   ├── db-helpers.ts   # CRUD operations
+│   └── utils.ts        # Utility functions
+├── stores/
+│   └── app-store.ts    # Zustand state management
+└── types/
+    └── index.ts        # TypeScript interfaces
+```
+
+## 💾 Data Model
+
+All data is stored locally in IndexedDB using Dexie:
+
+- **Pages** — Documents and Kanban boards with hierarchical relationships
+- **Kanban Cards** — Task cards organized by columns
+- **UI State** — Sidebar, theme, and active page preferences
+
+See [SPEC.md](./SPEC.md) for detailed data model documentation.
+
+## 🔒 Privacy
+
+Your data never leaves your browser. Everything is stored in IndexedDB and persists across sessions. No telemetry, no analytics, no external requests.
+
+## 🧪 Development
+
+```bash
+# Run linter
+pnpm lint
+
+# Type check
+pnpm build  # TypeScript compilation runs before build
+```
+
+## 📄 License
+
+MIT License - see [LICENSE](./LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+Built with [BlockNote](https://www.blocknotejs.org/), [shadcn/ui](https://ui.shadcn.com/), and other amazing open-source projects.
