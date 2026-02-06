@@ -39,3 +39,14 @@ export interface KanbanCard {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// ─── Deletion Log (for sync/merge) ───────────────────────────────────────────
+
+export type DeletableEntityType = "page" | "kanbanCard";
+
+export interface Deletion {
+  id: string;
+  entityType: DeletableEntityType;
+  entityId: string;
+  deletedAt: Date;
+}

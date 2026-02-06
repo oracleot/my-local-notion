@@ -17,6 +17,7 @@ A local, browser-only notebook app for documents and kanban boards. All your dat
 - [Sidebar Navigation](#sidebar-navigation)
 - [Search](#search)
 - [Dark Mode](#dark-mode)
+- [Export & Import](#export--import)
 - [Keyboard Shortcuts](#keyboard-shortcuts)
 - [Data & Privacy](#data--privacy)
 
@@ -244,6 +245,55 @@ Your theme preference is saved and persists across browser sessions.
 
 ---
 
+## Export & Import
+
+Sync your workspace across devices using a single JSON file. No accounts, no cloud services — just export on one device and import on another.
+
+### Opening the Export / Import Dialog
+
+1. Click **Settings** at the bottom of the sidebar
+2. Select **Import / Export** from the menu
+
+![Settings menu](docs/screenshots/19-settings-menu.png)
+
+### Exporting Your Workspace
+
+In the Export / Import dialog, click **Export Workspace** to download a `my-notebook-YYYY-MM-DD.json` file.
+
+![Export / Import dialog](docs/screenshots/20-export-import-dialog.png)
+
+Alternatively, press **`⌘+Shift+E`** anywhere in the app for a quick export (downloads immediately without opening the dialog).
+
+The export file contains all your pages, kanban boards, cards, and subtasks.
+
+### Importing & Merging
+
+1. Open the Import / Export dialog from **Settings** in the sidebar
+2. Drag and drop your exported JSON file onto the drop zone, or click to browse
+3. The app **merges** the imported data with your existing data
+
+### How Merge Works
+
+- **Newer changes win**: If the same page or card exists in both places, the one with the more recent `updatedAt` timestamp is kept
+- **Nothing is lost**: Items that exist only in the import file are added; items that exist only locally are preserved
+- **Edit beats delete**: If you edited something on one device and deleted it on another, the edit is preserved (safer default)
+- **Deletions sync**: Items you deleted are tracked, so they won't reappear when you import from an older backup
+
+After import, a summary shows how many pages/cards were added, updated, or deleted.
+
+### Sync Workflow
+
+For ongoing sync between devices (e.g., laptop and desktop):
+
+1. **Export** from Device A and save the file to a cloud-synced folder (iCloud Drive, Dropbox, Google Drive, OneDrive)
+2. **Import** the file on Device B
+3. **Export** from Device B back to the same cloud folder
+4. **Import** on Device A when ready
+
+This bidirectional workflow keeps both devices in sync without needing a server.
+
+---
+
 ## Keyboard Shortcuts
 
 | Shortcut           | Action                        |
@@ -251,6 +301,7 @@ Your theme preference is saved and persists across browser sessions.
 | `⌘+K`             | Open page search              |
 | `⌘+N`             | Create a new page             |
 | `⌘+\`             | Toggle sidebar                |
+| `⌘+Shift+E`       | Quick export (download JSON)  |
 | `⌘+Shift+L`       | Cycle theme (light/dark/sys)  |
 | `⌘+B`             | Bold text                     |
 | `⌘+I`             | Italic text                   |
@@ -269,7 +320,7 @@ Your theme preference is saved and persists across browser sessions.
 - **All data is stored locally** in your browser using IndexedDB. Nothing is sent to any server.
 - **No account needed** — just open the app and start writing.
 - Data persists between browser sessions and page reloads.
-- To back up your data, you can use your browser's developer tools to export IndexedDB data.
-- **Clearing browser data** (cookies + site data) will permanently delete your notebook pages. Use with caution.
+- **Back up your data** using the built-in **Export** feature (Settings → Import / Export, or press `⌘+Shift+E`).
+- **Clearing browser data** (cookies + site data) will permanently delete your notebook pages. Export regularly to avoid data loss.
 
 > **Tip:** The app requests persistent storage from the browser on first load to prevent your data from being automatically cleaned up.

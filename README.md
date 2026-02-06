@@ -8,10 +8,13 @@ A local-first, browser-only Notion clone built with modern web technologies. Cre
 
 - **📝 Rich Text Editor** — Notion-style block editing powered by BlockNote with full markdown support
 - **📋 Kanban Boards** — Drag-and-drop task management with columns and cards
+- **✅ Subtasks** — Break down cards into smaller tasks with independent progress tracking
 - **🗂️ Hierarchical Pages** — Organize pages in nested structures with unlimited depth
+- **😀 Page Icons** — Add emoji icons to any page for easy identification
 - **🔍 Fast Search** — Quick find any page with ⌘+K fuzzy search
 - **🌓 Dark Mode** — Light, dark, and system theme support with no FOUC
 - **💾 Local-First** — All data stored in IndexedDB, works completely offline
+- **📤 Export & Import** — Sync workspaces across devices via JSON file with smart merge
 - **⌨️ Keyboard Shortcuts** — Navigate efficiently with keyboard-first design
 - **🎨 Modern UI** — Clean, responsive interface built with shadcn/ui and Tailwind CSS
 
@@ -53,6 +56,7 @@ Visit `http://localhost:5173` to start using the app.
 - `⌘+K` / `Ctrl+K` — Open search dialog
 - `⌘+\` / `Ctrl+\` — Toggle sidebar
 - `⌘+N` / `Ctrl+N` — Create new page
+- `⌘+Shift+E` / `Ctrl+Shift+E` — Quick export workspace
 - `⌘+Shift+L` / `Ctrl+Shift+L` — Cycle theme (light/dark/system)
 
 ## 📁 Project Structure
@@ -61,13 +65,15 @@ Visit `http://localhost:5173` to start using the app.
 src/
 ├── components/
 │   ├── editor/         # BlockNote editor and page header
-│   ├── kanban/         # Kanban board components
+│   ├── kanban/         # Kanban board components (cards, columns, subtasks)
 │   ├── layout/         # App shell and sidebar
-│   ├── shared/         # Reusable components (search, breadcrumbs, etc.)
+│   ├── shared/         # Reusable components (search, breadcrumbs, data transfer)
 │   └── ui/             # shadcn/ui primitives
 ├── lib/
 │   ├── db.ts           # Dexie database schema
 │   ├── db-helpers.ts   # CRUD operations
+│   ├── data-transfer.ts # Export/import logic with merge
+│   ├── use-global-shortcuts.ts # Keyboard shortcut hooks
 │   └── utils.ts        # Utility functions
 ├── stores/
 │   └── app-store.ts    # Zustand state management
@@ -80,10 +86,18 @@ src/
 All data is stored locally in IndexedDB using Dexie:
 
 - **Pages** — Documents and Kanban boards with hierarchical relationships
-- **Kanban Cards** — Task cards organized by columns
+- **Kanban Cards** — Task cards organized by columns, with optional subtask relationships
 - **UI State** — Sidebar, theme, and active page preferences
 
-See [SPEC.md](./SPEC.md) for detailed data model documentation.
+### Export & Import
+
+Sync your workspace between devices using JSON export/import:
+
+- **Smart Merge** — Newer changes win based on timestamps
+- **Deletion Tracking** — Deleted items are tracked to prevent reappearing
+- **No Data Loss** — Edits are preserved over deletions
+
+See [SPEC.md](./docs/specs/SPEC.md) for detailed data model documentation.
 
 ## 🔒 Privacy
 
@@ -112,4 +126,4 @@ Built with [BlockNote](https://www.blocknotejs.org/), [shadcn/ui](https://ui.sha
 ## 📚 Documentation
 
 - [User Guide](./USER_GUIDE.md) — Complete walkthrough with screenshots
-- [Technical Specification](./SPEC.md) — Architecture and implementation details
+- [Technical Specification](./docs/specs/SPEC.md) — Architecture and implementation details

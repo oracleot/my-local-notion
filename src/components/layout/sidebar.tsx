@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
@@ -18,18 +19,22 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { PageTreeItem } from "@/components/shared/page-tree-item";
+import { DataTransferDialog } from "@/components/shared/data-transfer-dialog";
 import {
   Plus,
   Search,
   PanelLeftClose,
   FileText,
   LayoutGrid,
+  Settings,
+  Upload,
 } from "lucide-react";
 import type { PageType } from "@/types";
 
 export function Sidebar() {
   const navigate = useNavigate();
   const { toggleSidebar } = useAppStore();
+  const [dataTransferOpen, setDataTransferOpen] = useState(false);
 
   const rootPages = useLiveQuery(() =>
     db.pages.filter((p) => p.parentId === null).sortBy("createdAt")
@@ -151,6 +156,35 @@ export function Sidebar() {
           )}
         </div>
       </ScrollArea>
+
+      {/* ── Settings / Import-Export ── */}
+      <div className="border-t border-sidebar-border/50 px-2.5 py-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-2.5 h-7 px-2 text-[13px] text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent font-normal"
+            >
+              <Settings className="h-3.5 w-3.5 opacity-60" />
+              Settings
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-48">
+            <DropdownMenuItem
+              className="gap-2 text-[13px]"
+              onClick={() => setDataTransferOpen(true)}
+            >
+              <Upload className="h-4 w-4 opacity-60" />
+              Import / Export
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <DataTransferDialog
+        open={dataTransferOpen}
+        onOpenChange={setDataTransferOpen}
+      />
     </div>
   );
 }

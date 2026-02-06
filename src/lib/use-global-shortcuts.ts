@@ -2,12 +2,14 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useAppStore } from "@/stores/app-store";
 import { createPage } from "@/lib/db-helpers";
+import { exportWorkspace, downloadExport } from "@/lib/data-transfer";
 
 /**
  * Registers global keyboard shortcuts:
  * - ⌘+\ → toggle sidebar
  * - ⌘+N → create new page
  * - ⌘+Shift+L → cycle theme (light → dark → system)
+ * - ⌘+Shift+E → quick export (direct download)
  * (⌘+K is handled inside SearchDialog)
  */
 export function useGlobalShortcuts() {
@@ -30,6 +32,13 @@ export function useGlobalShortcuts() {
       if (meta && e.shiftKey && e.key.toLowerCase() === "l") {
         e.preventDefault();
         cycleTheme();
+        return;
+      }
+
+      // ⌘+Shift+E → quick export
+      if (meta && e.shiftKey && e.key.toLowerCase() === "e") {
+        e.preventDefault();
+        exportWorkspace().then(downloadExport);
         return;
       }
 

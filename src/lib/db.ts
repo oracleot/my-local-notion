@@ -1,9 +1,10 @@
 import Dexie, { type EntityTable } from "dexie";
-import type { Page, KanbanCard } from "@/types";
+import type { Page, KanbanCard, Deletion } from "@/types";
 
 const db = new Dexie("NotionCloneDB") as Dexie & {
   pages: EntityTable<Page, "id">;
   kanbanCards: EntityTable<KanbanCard, "id">;
+  deletions: EntityTable<Deletion, "id">;
 };
 
 db.version(1).stores({
@@ -22,6 +23,13 @@ db.version(2).stores({
       card.parentId = null;
     }
   });
+});
+
+// Add deletions table for sync/merge support
+db.version(3).stores({
+  pages: "id, parentId, updatedAt",
+  kanbanCards: "id, pageId, columnId, parentId",
+  deletions: "id, [entityType+entityId]",
 });
 
 export { db };

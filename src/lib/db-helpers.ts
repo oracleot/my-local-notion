@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import type { Page, KanbanCard, KanbanColumn, PageType } from "@/types";
+import type { Page, KanbanCard, KanbanColumn, PageType, Deletion, DeletableEntityType } from "@/types";
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
@@ -24,6 +24,18 @@ function debounce(key: string, fn: () => void, ms = 300): void {
       fn();
     }, ms)
   );
+}
+
+// ─── Deletion Log Helper ─────────────────────────────────────────────────────
+
+async function logDeletion(entityType: DeletableEntityType, entityId: string): Promise<void> {
+  const deletion: Deletion = {
+    id: generateId(),
+    entityType,
+    entityId,
+    deletedAt: now(),
+  };
+  await db.deletions.add(deletion);
 }
 
 // ─── Page CRUD ───────────────────────────────────────────────────────────────
@@ -89,6 +101,7 @@ export async function movePage(
 /**
  * Recursively deletes a page and all its descendants,
  * plus any kanban cards belonging to those pages.
+ * Logs deletions for sync/merge support.
  */
 export async function deletePage(id: string): Promise<void> {
   // Collect all descendant page IDs
@@ -107,7 +120,23 @@ export async function deletePage(id: string): Promise<void> {
 
   await collectDescendants(id);
 
-  await db.transaction("rw", db.pages, db.kanbanCards, async () => {
+  await db.transaction("rw", db.pages, db.kanbanCards, db.deletions, async () => {
+    // Get all kanban cards for these pages (to log deletions)
+    const cardsToDelete = await db.kanbanCards
+      .where("pageId")
+      .anyOf(idsToDelete)
+      .toArray();
+
+    // Log deletions for cards
+    for (const card of cardsToDelete) {
+      await logDeletion("kanbanCard", card.id);
+    }
+
+    // Log deletions for pages
+    for (const pageId of idsToDelete) {
+      await logDeletion("page", pageId);
+    }
+
     // Delete all kanban cards for these pages
     await db.kanbanCards
       .where("pageId")
@@ -169,7 +198,19 @@ export async function deleteColumn(
   const page = await db.pages.get(pageId);
   if (!page) throw new Error(`Page ${pageId} not found`);
 
-  await db.transaction("rw", db.pages, db.kanbanCards, async () => {
+  await db.transaction("rw", db.pages, db.kanbanCards, db.deletions, async () => {
+    // Get all cards in this column (to log deletions)
+    const cardsToDelete = await db.kanbanCards
+      .where("pageId")
+      .equals(pageId)
+      .filter((card) => card.columnId === columnId)
+      .toArray();
+
+    // Log deletions for cards
+    for (const card of cardsToDelete) {
+      await logDeletion("kanbanCard", card.id);
+    }
+
     // Delete all cards in this column
     await db.kanbanCards
       .where("pageId")
@@ -238,20 +279,22 @@ export async function moveCard(
 }
 
 export async function deleteCard(id: string): Promise<void> {
-  // Cascade delete all subtasks
-  await db.transaction("rw", db.kanbanCards, async () => {
+  // Cascade delete all subtasks and log deletions
+  await db.transaction("rw", db.kanbanCards, db.deletions, async () => {
     // Get all subtasks for this card
     const subtasks = await db.kanbanCards
       .where("parentId")
       .equals(id)
       .toArray();
     
-    // Delete subtasks
+    // Log deletions and delete subtasks
     for (const subtask of subtasks) {
+      await logDeletion("kanbanCard", subtask.id);
       await db.kanbanCards.delete(subtask.id);
     }
     
-    // Delete the card itself
+    // Log deletion and delete the card itself
+    await logDeletion("kanbanCard", id);
     await db.kanbanCards.delete(id);
   });
 }
