@@ -1,0 +1,21 @@
+# Phase 1 — Project Scaffolding & Tooling
+
+- [x] **1.1** Install Tailwind CSS v4 (`tailwindcss`, `@tailwindcss/vite`)
+  - Add `@tailwindcss/vite` plugin to `vite.config.ts`
+  - Replace `src/index.css` contents with `@import "tailwindcss"`
+- [x] **1.2** Configure path aliases (`@/*` → `./src/*`)
+  - Update `tsconfig.app.json` with `paths`
+  - Add `resolve.alias` in `vite.config.ts`
+- [x] **1.3** Initialize shadcn/ui (`pnpm dlx shadcn@latest init`)
+  - Generates `components.json`, installs `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react`
+  - Creates `src/lib/utils.ts` with `cn()` helper
+- [x] **1.4** Install application dependencies
+  - `react-router`
+  - `@blocknote/core @blocknote/react @blocknote/shadcn`
+  - `dexie dexie-react-hooks`
+  - `zustand`
+  - `@dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities`
+- [x] **1.5** Add BlockNote shadcn source directive to `src/index.css`
+  - `@source "../node_modules/@blocknote/shadcn";`
+- [x] **1.6** Remove default Vite scaffold code from `App.tsx`, `App.css`
+- [x] **1.7** Create `src/types/index.ts` with shared interfaces (`Page`, `KanbanCard`, `KanbanColumn`)

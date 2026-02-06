@@ -1,0 +1,21 @@
+# Phase 5 — Kanban Boards
+
+- [x] **5.1** Create `src/components/kanban/kanban-board.tsx`
+  - Horizontal flex layout, overflow-x scroll
+  - `DndContext` from `@dnd-kit/core` wrapping all columns
+  - Loads columns from `page.columns` and cards from `kanbanCards` table via `useLiveQuery`
+  - "Add column" button at end
+  - Handles `onDragEnd` → calls `moveCard()` helper
+- [x] **5.2** Create `src/components/kanban/kanban-column.tsx`
+  - Editable column title
+  - `SortableContext` for cards within column
+  - Droppable area
+  - "Add card" button at bottom
+  - Column menu (rename, delete, color)
+- [x] **5.3** Create `src/components/kanban/kanban-card.tsx`
+  - `useSortable` hook for drag handle
+  - Displays title, optional description preview
+  - Click → opens edit modal/side panel
+- [x] **5.4** Add card detail dialog
+  - shadcn `Dialog` or `Sheet` for editing card title + description
+  - Saves changes to Dexie on close
