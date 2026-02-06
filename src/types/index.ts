@@ -32,6 +32,7 @@ export interface KanbanCard {
   id: string;
   pageId: string;
   columnId: string;
+  parentId: string | null;
   title: string;
   description: string;
   order: number;

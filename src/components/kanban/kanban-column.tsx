@@ -20,6 +20,8 @@ import { MoreHorizontal, Plus, Trash2, Pencil } from "lucide-react";
 interface KanbanColumnProps {
   column: KanbanColumnType;
   cards: KanbanCardType[];
+  allCards: KanbanCardType[];
+  allColumns: KanbanColumnType[];
   pageId: string;
   onRenameColumn: (columnId: string, title: string) => void;
   onDeleteColumn: (columnId: string) => void;
@@ -29,6 +31,8 @@ interface KanbanColumnProps {
 export function KanbanColumn({
   column,
   cards,
+  allCards,
+  allColumns,
   pageId,
   onRenameColumn,
   onDeleteColumn,
@@ -128,6 +132,8 @@ export function KanbanColumn({
               <KanbanCard
                 key={card.id}
                 card={card}
+                allCards={allCards}
+                columns={allColumns}
                 onOpen={onOpenCard}
               />
             ))}

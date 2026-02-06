@@ -206,6 +206,7 @@ export async function createCard(
     id: generateId(),
     pageId,
     columnId,
+    parentId: null,
     title,
     description: "",
     order: maxOrder + 1,
@@ -237,5 +238,134 @@ export async function moveCard(
 }
 
 export async function deleteCard(id: string): Promise<void> {
-  await db.kanbanCards.delete(id);
+  // Cascade delete all subtasks
+  await db.transaction("rw", db.kanbanCards, async () => {
+    // Get all subtasks for this card
+    const subtasks = await db.kanbanCards
+      .where("parentId")
+      .equals(id)
+      .toArray();
+    
+    // Delete subtasks
+    for (const subtask of subtasks) {
+      await db.kanbanCards.delete(subtask.id);
+    }
+    
+    // Delete the card itself
+    await db.kanbanCards.delete(id);
+  });
+}
+
+// ─── Subtask helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Creates a subtask under a parent card.
+ * Subtasks can be in any column (independent of parent).
+ * Enforces one level only - subtasks cannot have their own subtasks.
+ */
+export async function createSubtask(
+  parentCardId: string,
+  columnId: string,
+  title: string
+): Promise<KanbanCard> {
+  const parentCard = await db.kanbanCards.get(parentCardId);
+  if (!parentCard) throw new Error(`Parent card ${parentCardId} not found`);
+  
+  // Enforce one level only - subtasks cannot have subtasks
+  if (parentCard.parentId !== null) {
+    throw new Error("Subtasks cannot have their own subtasks (one level only)");
+  }
+
+  // Get the current max order in the target column
+  const cardsInColumn = await db.kanbanCards
+    .where("pageId")
+    .equals(parentCard.pageId)
+    .filter((c) => c.columnId === columnId)
+    .toArray();
+
+  const maxOrder = cardsInColumn.reduce(
+    (max, card) => Math.max(max, card.order),
+    -1
+  );
+
+  const subtask: KanbanCard = {
+    id: generateId(),
+    pageId: parentCard.pageId,
+    columnId,
+    parentId: parentCardId,
+    title,
+    description: "",
+    order: maxOrder + 1,
+    createdAt: now(),
+    updatedAt: now(),
+  };
+
+  await db.kanbanCards.add(subtask);
+  return subtask;
+}
+
+/**
+ * Gets all subtasks for a parent card across all columns.
+ */
+export async function getSubtasks(parentCardId: string): Promise<KanbanCard[]> {
+  return db.kanbanCards
+    .where("parentId")
+    .equals(parentCardId)
+    .toArray();
+}
+
+/**
+ * Gets the parent card info for a subtask.
+ * Returns null if the card is not a subtask or parent not found.
+ */
+export async function getParentCard(cardId: string): Promise<KanbanCard | null> {
+  const card = await db.kanbanCards.get(cardId);
+  if (!card || card.parentId === null) return null;
+  
+  const parent = await db.kanbanCards.get(card.parentId);
+  return parent ?? null;
+}
+
+/**
+ * Promotes a subtask to a standalone card (removes parent link).
+ */
+export async function promoteSubtask(subtaskId: string): Promise<void> {
+  const card = await db.kanbanCards.get(subtaskId);
+  if (!card) throw new Error(`Card ${subtaskId} not found`);
+  if (card.parentId === null) return; // Already a standalone card
+  
+  await db.kanbanCards.update(subtaskId, { parentId: null, updatedAt: now() });
+}
+
+/**
+ * Demotes a standalone card to a subtask (assigns a parent).
+ * Validates that the parent is not itself a subtask.
+ */
+export async function demoteToSubtask(
+  cardId: string,
+  parentCardId: string
+): Promise<void> {
+  const card = await db.kanbanCards.get(cardId);
+  if (!card) throw new Error(`Card ${cardId} not found`);
+  
+  const parentCard = await db.kanbanCards.get(parentCardId);
+  if (!parentCard) throw new Error(`Parent card ${parentCardId} not found`);
+  
+  // Cannot assign to a subtask as parent
+  if (parentCard.parentId !== null) {
+    throw new Error("Cannot demote to a subtask of another subtask");
+  }
+  
+  // Cannot make a card a subtask of itself
+  if (cardId === parentCardId) {
+    throw new Error("Card cannot be its own parent");
+  }
+  
+  // If this card has subtasks, we need to promote them first
+  const subtasks = await getSubtasks(cardId);
+  for (const subtask of subtasks) {
+    await promoteSubtask(subtask.id);
+  }
+  
+  await db.kanbanCards.update(cardId, { parentId: parentCardId, updatedAt: now() });
 }

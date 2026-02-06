@@ -187,6 +187,8 @@ export function KanbanBoard({ page }: KanbanBoardProps) {
               key={col.id}
               column={col}
               cards={cardsByColumn.get(col.id) ?? []}
+              allCards={cards ?? []}
+              allColumns={columns}
               pageId={page.id}
               onRenameColumn={handleRenameColumn}
               onDeleteColumn={handleDeleteColumn}
@@ -259,7 +261,10 @@ export function KanbanBoard({ page }: KanbanBoardProps) {
       {/* Card detail dialog */}
       <KanbanCardDetail
         card={detailCard}
+        allCards={cards ?? []}
+        columns={columns}
         onClose={() => setDetailCard(null)}
+        onOpenCard={(card) => setDetailCard(card)}
       />
     </>
   );

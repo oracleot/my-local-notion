@@ -38,16 +38,17 @@
 
 ### `kanbanCards` table
 
-| Field         | Type     | Indexed | Notes                         |
-| ------------- | -------- | ------- | ----------------------------- |
-| `id`          | `string` | PK      |                               |
-| `pageId`      | `string` | Yes     | FK → parent Kanban page       |
-| `columnId`    | `string` | Yes     | Which column the card is in   |
-| `title`       | `string` |         |                               |
-| `description` | `string` |         |                               |
-| `order`       | `number` |         | Sort position within column   |
-| `createdAt`   | `Date`   |         |                               |
-| `updatedAt`   | `Date`   |         |                               |
+| Field         | Type             | Indexed | Notes                                      |
+| ------------- | ---------------- | ------- | ------------------------------------------ |
+| `id`          | `string`         | PK      |                                            |
+| `pageId`      | `string`         | Yes     | FK → parent Kanban page                    |
+| `columnId`    | `string`         | Yes     | Which column the card is in                |
+| `parentId`    | `string \| null` | Yes     | FK → parent card (null = top-level)        |
+| `title`       | `string`         |         |                                            |
+| `description` | `string`         |         |                                            |
+| `order`       | `number`         |         | Sort position within column                |
+| `createdAt`   | `Date`           |         |                                            |
+| `updatedAt`   | `Date`           |         |                                            |
 
 ### `KanbanColumn` (embedded JSON on page)
 
@@ -261,6 +262,174 @@ src/
   - Navigate to nested board → Kanban view renders
   - Check breadcrumbs show correct parent → child path
 
+### Phase 9 — Video Walkthrough: Remotion Project Setup
+
+> **Goal**: Create a ~60-90 second programmatic YouTube video using Remotion (React-based video).
+> Targets general users — highlights privacy, productivity, and key features.
+> Animated text captions over stylized app screenshots, smooth transitions, background music. No screen recording or voiceover.
+
+- [ ] **9.1** Initialize Remotion project in `video/` directory at repo root
+  - Run `npx create-video@latest` (TypeScript template)
+  - Configure Tailwind CSS for Remotion (per `rules/tailwind.md`)
+  - Add to `.gitignore`: `video/out/`, `video/node_modules/`
+- [ ] **9.2** Set up project structure inside `video/`
+  - `video/src/Root.tsx` — Register all compositions
+  - `video/src/compositions/` — One folder per scene
+  - `video/src/components/` — Shared animated components
+  - `video/src/assets/` — Screenshots, music, icons
+  - `video/src/lib/` — Timing constants, color tokens, font config
+- [ ] **9.3** Configure video composition with Zod schema (per `rules/parameters.md`)
+  - Props: `title`, `tagline`, `features[]`, `themeColors`
+  - Register single `MainVideo` composition: **1920×1080 @ 30fps**, ~85 seconds
+- [ ] **9.4** Load fonts (per `rules/fonts.md`)
+  - Use `@remotion/google-fonts` for a distinctive display font (e.g., Space Grotesk)
+  - Clean body font for captions
+- [ ] **9.5** Define shared timing constants and color tokens in `video/src/lib/`
+  - Scene durations, transition durations, frame breakpoints
+  - Brand colors matching the app's theme
+
+### Phase 10 — Video Walkthrough: Asset Capture
+
+- [ ] **10.1** Take high-quality app screenshots (1920×1080, 2x retina)
+  - Light mode: empty state, rich editor with sample content, kanban board, sidebar expanded, ⌘+K search dialog, emoji picker
+  - Dark mode: editor view, kanban board
+- [ ] **10.2** Source royalty-free background music (~90 seconds)
+  - Upbeat lo-fi or minimal electronic track
+  - Must be YouTube-safe (Creative Commons or purchased license)
+  - Trim to match video duration
+
+### Phase 11 — Video Walkthrough: Script & Copy
+
+> Use **copywriting skill** for benefit-driven, concise animated text captions.
+
+- [ ] **11.1** Write intro hook caption
+  - e.g., "Your notes. Your device. Your rules."
+- [ ] **11.2** Write problem frame caption
+  - e.g., "Tired of cloud apps owning your data?"
+- [ ] **11.3** Write solution reveal caption
+  - App name + tagline with personality
+- [ ] **11.4** Write feature highlight captions (5 rapid-fire)
+  - "Rich documents with slash commands"
+  - "Kanban boards with drag & drop"
+  - "Nested pages, infinite depth"
+  - "Lightning-fast search with ⌘+K"
+  - "Dark mode, naturally"
+- [ ] **11.5** Write privacy punch caption
+  - "100% local. No accounts. No cloud. No tracking."
+- [ ] **11.6** Write CTA/outro caption
+  - "Try it free → [URL]" + GitHub star prompt
+
+### Phase 12 — Video Walkthrough: Build Scenes
+
+> Use **frontend design skill** for distinctive visuals. Use **Remotion best practices** for animations, sequencing, and transitions.
+
+- [ ] **12.1** Build Scene 1 — Intro/Hook (0–8s)
+  - Animated text reveal of hook line against gradient mesh background
+  - `spring()` entrance animation (per `rules/animations.md`, `rules/text-animations.md`)
+  - Transition out with slide/wipe (per `rules/transitions.md`)
+- [ ] **12.2** Build Scene 2 — Problem (8–14s)
+  - Pain-point text animates in with subtle glitch/shake effect
+  - Dark, moody background tone
+- [ ] **12.3** Build Scene 3 — App Reveal (14–22s)
+  - App name/logo scales up with spring bounce
+  - Tagline fades in below
+  - Background shifts to brand colors
+- [ ] **12.4** Build Scene 4 — Feature Showcase (22–60s)
+  - 5 feature cards, ~7–8 seconds each
+  - Each card: text caption slides in from left, framed screenshot scales in from right
+  - Use `<Sequence>` / `<Series>` (per `rules/sequencing.md`)
+  - Scene transitions between features (per `rules/transitions.md`)
+  - Screenshots inside a `BrowserFrame` mockup component
+- [ ] **12.5** Build Scene 5 — Privacy Punch (60–72s)
+  - Bold, large text: "100% local." — staggered word entrance
+  - Icons for "No accounts", "No cloud", "No tracking" with spring animations
+- [ ] **12.6** Build Scene 6 — CTA/Outro (72–85s)
+  - App name, URL, GitHub star prompt
+  - Fade out with music
+
+### Phase 13 — Video Walkthrough: Shared Components
+
+> Keep every component under **200 lines** (per project guidelines).
+
+- [ ] **13.1** Build `TextReveal` component
+  - Staggered letter/word entrance animation using `interpolate()` + `spring()`
+- [ ] **13.2** Build `FeatureCard` component
+  - Screenshot + caption layout with entrance animation
+- [ ] **13.3** Build `BrowserFrame` component
+  - Styled mock browser chrome wrapping screenshots (traffic lights, address bar)
+- [ ] **13.4** Build `GradientBackground` component
+  - Animated gradient mesh or noise-textured background
+- [ ] **13.5** Build `IconBadge` component
+  - Animated icon + label (for privacy feature callouts)
+
+### Phase 14 — Video Walkthrough: Polish & Render
+
+- [ ] **14.1** Add music track to composition
+  - Import audio, set volume, sync timing (per `rules/audio.md`)
+  - Apply short fade-in at start and fade-out at end
+- [ ] **14.2** Wire all scenes into `Root.tsx`
+  - Register as single `<Composition>` using `<Series>` to chain scenes
+  - Verify total duration is 80–90 seconds
+- [ ] **14.3** Preview and iterate
+  - Run `npx remotion preview` in `video/` directory
+  - Scrub through all scenes — verify timing, transitions, text readability
+- [ ] **14.4** Render final video
+  - Run `npx remotion render MainVideo out/walkthrough.mp4 --codec h264`
+  - Verify output: 1080p, 30fps, correct duration, audio synced
+- [ ] **14.5** Final QA
+  - Confirm `pnpm build` in main project root still passes (video workspace doesn't interfere)
+  - Test video playback in multiple players
+  - Verify text is readable at 720p (YouTube's most common quality)
+
+### Phase 15 — Kanban Subtasks (Card-in-Card)
+
+> **Goal**: Allow cards to contain subtasks (child cards) that can move independently across columns while maintaining a parent link. Subtasks appear in their actual column with a visual indicator of their parent.
+
+- [x] **15.1** Extend `KanbanCard` interface in `src/types/index.ts`
+  - Add `parentId: string | null` field
+  - Top-level cards: `parentId = null`
+  - Subtasks: `parentId = <parent card id>`
+- [x] **15.2** Update Dexie schema in `src/lib/db.ts`
+  - Increment schema version
+  - Add `parentId` index to `kanbanCards` table
+  - Add migration: set `parentId: null` for existing cards
+- [x] **15.3** Add subtask helpers in `src/lib/db-helpers.ts`
+  - `createSubtask(parentCardId, columnId, title)` — creates subtask in specified column (can differ from parent)
+  - `getSubtasks(parentCardId)` — returns subtasks across all columns
+  - `getParentCard(cardId)` — fetch parent info for badge display
+  - Modify `deleteCard(id)` — cascade-delete all subtasks when deleting parent
+- [x] **15.4** Update `KanbanCard` component in `src/components/kanban/kanban-card.tsx`
+  - **For parent cards**: Show subtask summary badge (e.g., "2/3 done")
+  - **For subtask cards**: Show parent link indicator (small icon + truncated parent title on hover)
+  - Use conditional rendering based on `parentId` presence
+- [x] **15.5** Update `KanbanColumn` rendering in `src/components/kanban/kanban-column.tsx`
+  - Show ALL cards in column (parents + subtasks)
+  - No filtering by `parentId` — subtasks appear where they belong
+- [x] **15.6** Enhance `KanbanCardDetail` in `src/components/kanban/kanban-card-detail.tsx`
+  - **For parent cards**: Section listing subtasks with column status, click to open subtask, "Add subtask" button
+  - **For subtask cards**: Show "Parent: [Card Title]" link at top, click navigates to parent detail
+  - Subtask list shows which column each subtask is in
+- [x] **15.7** Add subtask creation UX
+  - In card detail: "Add subtask" opens quick-create inline input
+  - New subtask defaults to same column as parent (user can move later via drag or detail modal)
+- [x] **15.8** Add promotion/demotion actions (optional enhancement)
+  - Allow converting a regular card to a subtask (assign parent)
+  - Allow promoting subtask to standalone card (clear parent)
+
+#### Subtasks Data Model Extension
+
+| Field      | Type            | Notes                                   |
+| ---------- | --------------- | --------------------------------------- |
+| `parentId` | `string \| null`| `null` = top-level card, else = subtask |
+
+#### Subtasks Behavior Rules
+
+- **Independent movement**: Subtasks can move to any column independent of their parent (e.g., parent in "To Do", subtask in "Done")
+- **Visual linkage**: Subtask cards display a small parent indicator badge
+- **Progress tracking**: Parent cards show subtask completion summary (e.g., "2/3 done" based on subtasks in final column)
+- **Cascade delete**: Deleting a parent card deletes all its subtasks
+- **One level only**: Subtasks cannot have their own subtasks (enforced in `createSubtask`)
+
 ---
 
 ## Verification Checklist
@@ -279,6 +448,11 @@ src/
 - [ ] Change OS appearance while set to "system" — app follows automatically
 - [ ] BlockNote editor adapts correctly in dark mode
 - [ ] `⌘+Shift+L` cycles the theme
+- [ ] Create a card, add subtasks from card detail → subtasks appear in same column with parent indicator
+- [ ] Move subtask to different column than parent → subtask appears in new column, parent shows updated progress (e.g., "1/2 done")
+- [ ] Delete parent card → all subtasks are cascade-deleted
+- [ ] Open subtask detail → shows "Parent: [title]" link, clicking navigates to parent
+- [ ] Attempting to add subtask to a subtask is prevented (one level only)
 
 ---
 

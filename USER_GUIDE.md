@@ -12,6 +12,7 @@ A local, browser-only notebook app for documents and kanban boards. All your dat
 - [Using Icons](#using-icons)
 - [Kanban Boards](#kanban-boards)
 - [Editing Cards](#editing-cards)
+- [Subtasks](#subtasks)
 - [Nested Pages & Breadcrumbs](#nested-pages--breadcrumbs)
 - [Sidebar Navigation](#sidebar-navigation)
 - [Search](#search)
@@ -121,6 +122,64 @@ Click on any card to open the detail dialog. Here you can:
 - Click **Save** or press **Enter** to save changes
 
 ![Card detail dialog](docs/screenshots/08-card-detail.png)
+
+---
+
+## Subtasks
+
+Subtasks help you break down complex cards into smaller, manageable pieces. Any card on a kanban board can have subtasks.
+
+### Adding Subtasks
+
+Click on any card to open its detail dialog. In the **Subtasks** section, click **+ Add** to create a new subtask.
+
+![Add subtask form](docs/screenshots/16-add-subtask-form.png)
+
+Type the subtask title and press **Enter** or click **Add** to create it. Subtasks are added to the same column as the parent card initially.
+
+### Viewing Subtasks
+
+The parent card's detail dialog shows all its subtasks in a list. Each subtask displays:
+
+- A **status circle** — empty for incomplete, filled for complete
+- The **subtask title**
+- The **current column** the subtask is in (e.g., "To Do", "In Progress", "Done")
+
+![Card detail with subtasks](docs/screenshots/15-card-detail-subtasks.png)
+
+Click any subtask in the list to open its detail dialog.
+
+### Subtasks on the Board
+
+Subtasks appear as separate cards on the kanban board, just like regular cards. They can be:
+
+- **Dragged** between columns independently of their parent
+- **Identified** by a small label showing the parent card's title
+
+The parent card displays a **progress badge** (e.g., "0/3 done") showing how many subtasks are complete.
+
+![Kanban board with subtasks](docs/screenshots/17-kanban-with-subtasks.png)
+
+### Subtask Details
+
+Click a subtask card to open its detail dialog. Subtask dialogs show:
+
+- A **Parent** link at the top — click to navigate to the parent card
+- The usual **Title** and **Description** fields
+- A **Promote** button to convert the subtask into a standalone card
+
+![Subtask detail dialog](docs/screenshots/18-subtask-detail.png)
+
+### Promoting Subtasks
+
+If a subtask grows in scope and should become its own card, click the **Promote** button in the subtask's detail dialog. This removes the parent relationship, turning it into a regular standalone card.
+
+### Key Points
+
+- Subtasks can **move independently** between columns
+- A subtask is marked **complete** when moved to the last column (typically "Done")
+- Subtasks are **one level only** — subtasks cannot have their own subtasks
+- **Deleting a parent card** also deletes all its subtasks
 
 ---
 
