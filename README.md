@@ -33,6 +33,8 @@ pnpm preview
 
 Visit `http://localhost:5173` to start using the app.
 
+📖 **New to the app?** Check out the [User Guide](./USER_GUIDE.md) for a complete walkthrough with screenshots.
+
 ## 🛠️ Tech Stack
 
 | Layer          | Library                      | Purpose                          |
@@ -104,3 +106,10 @@ MIT License - see [LICENSE](./LICENSE) file for details.
 ## 🙏 Acknowledgments
 
 Built with [BlockNote](https://www.blocknotejs.org/), [shadcn/ui](https://ui.shadcn.com/), and other amazing open-source projects.
+
+---
+
+## 📚 Documentation
+
+- [User Guide](./USER_GUIDE.md) — Complete walkthrough with screenshots
+- [Technical Specification](./SPEC.md) — Architecture and implementation details
