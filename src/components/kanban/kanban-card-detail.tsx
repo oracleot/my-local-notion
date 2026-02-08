@@ -15,7 +15,7 @@ import {
   promoteSubtask,
 } from "@/lib/db-helpers";
 import type { KanbanCard, KanbanColumn } from "@/types";
-import { Trash2, Plus, ArrowUp, ListTodo, ArrowUpRight, CheckCircle2, Circle } from "lucide-react";
+import { Trash2, Plus, ArrowUp, ListTodo, ArrowUpRight, CheckCircle2, Circle, ExternalLink } from "lucide-react";
 
 interface KanbanCardDetailProps {
   card: KanbanCard | null;
@@ -34,15 +34,18 @@ export function KanbanCardDetail({
 }: KanbanCardDetailProps) {
   const [title, setTitle] = useState(card?.title ?? "");
   const [description, setDescription] = useState(card?.description ?? "");
+  const [link, setLink] = useState(card?.link ?? "");
   const [prevCardId, setPrevCardId] = useState<string | null>(null);
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [newSubtaskLink, setNewSubtaskLink] = useState("");
 
   // Sync local state when card changes
   if (card && card.id !== prevCardId) {
     setPrevCardId(card.id);
     setTitle(card.title);
     setDescription(card.description);
+    setLink(card.link ?? "");
   }
 
   // Calculate derived data
@@ -66,9 +69,10 @@ export function KanbanCardDetail({
     await updateCard(card.id, {
       title: title.trim() || "Untitled",
       description: description.trim(),
+      link: link.trim(),
     });
     onClose();
-  }, [card, title, description, onClose]);
+  }, [card, title, description, link, onClose]);
 
   const handleDelete = useCallback(async () => {
     if (!card) return;
@@ -78,10 +82,14 @@ export function KanbanCardDetail({
 
   const handleAddSubtask = useCallback(async () => {
     if (!card || !newSubtaskTitle.trim()) return;
-    await createSubtask(card.id, card.columnId, newSubtaskTitle.trim());
+    const subtask = await createSubtask(card.id, card.columnId, newSubtaskTitle.trim());
+    if (newSubtaskLink.trim()) {
+      await updateCard(subtask.id, { link: newSubtaskLink.trim() });
+    }
     setNewSubtaskTitle("");
+    setNewSubtaskLink("");
     setIsAddingSubtask(false);
-  }, [card, newSubtaskTitle]);
+  }, [card, newSubtaskTitle, newSubtaskLink]);
 
   const handlePromote = useCallback(async () => {
     if (!card) return;
@@ -95,12 +103,12 @@ export function KanbanCardDetail({
 
   return (
     <Dialog open={!!card} onOpenChange={(open) => !open && handleSave()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="sr-only">Edit card</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <div className="space-y-4 overflow-y-auto py-2 flex-1 min-h-0">
           {/* Parent link for subtasks */}
           {isSubtask && parentCard && (
             <button
@@ -138,6 +146,34 @@ export function KanbanCardDetail({
               rows={3}
               className="w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-[13px] leading-relaxed placeholder:text-muted-foreground/50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[12px] font-medium text-muted-foreground">
+              Link
+            </label>
+            <div className="flex items-center gap-1.5">
+              <Input
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                placeholder="https://…"
+                className="text-[13px] flex-1"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSave();
+                }}
+              />
+              {link.trim() && (
+                <a
+                  href={link.trim().startsWith("http") ? link.trim() : `https://${link.trim()}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="shrink-0 rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              )}
+            </div>
           </div>
 
           {/* Subtasks section for parent cards only */}
@@ -199,6 +235,21 @@ export function KanbanCardDetail({
                       if (e.key === "Enter") handleAddSubtask();
                       if (e.key === "Escape") {
                         setNewSubtaskTitle("");
+                        setNewSubtaskLink("");
+                        setIsAddingSubtask(false);
+                      }
+                    }}
+                    className="h-8 text-[13px]"
+                  />
+                  <Input
+                    placeholder="Link URL (optional)…"
+                    value={newSubtaskLink}
+                    onChange={(e) => setNewSubtaskLink(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleAddSubtask();
+                      if (e.key === "Escape") {
+                        setNewSubtaskTitle("");
+                        setNewSubtaskLink("");
                         setIsAddingSubtask(false);
                       }
                     }}
@@ -213,6 +264,7 @@ export function KanbanCardDetail({
                       variant="ghost"
                       onClick={() => {
                         setNewSubtaskTitle("");
+                        setNewSubtaskLink("");
                         setIsAddingSubtask(false);
                       }}
                     >

@@ -65,12 +65,14 @@ export function PageView() {
   // Kanban pages
   if (page.pageType === "kanban") {
     return (
-      <div className="px-6 pt-16 pb-24">
-        <div className="max-w-3xl px-10">
+      <div className="flex h-full flex-col overflow-hidden pt-16">
+        <div className="max-w-3xl shrink-0 px-10">
           <Breadcrumbs page={page} />
           <PageHeader key={page.id} page={page} />
         </div>
-        <KanbanBoard page={page} />
+        <div className="min-h-0 flex-1">
+          <KanbanBoard page={page} />
+        </div>
       </div>
     );
   }

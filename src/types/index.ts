@@ -35,6 +35,7 @@ export interface KanbanCard {
   parentId: string | null;
   title: string;
   description: string;
+  link: string;
   order: number;
   createdAt: Date;
   updatedAt: Date;

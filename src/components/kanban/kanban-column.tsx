@@ -40,6 +40,7 @@ export function KanbanColumn({
 }: KanbanColumnProps) {
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState("");
+  const [newCardLink, setNewCardLink] = useState("");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState(column.title);
 
@@ -51,10 +52,15 @@ export function KanbanColumn({
   const handleAddCard = useCallback(async () => {
     const title = newCardTitle.trim();
     if (!title) return;
-    await createCard(pageId, column.id, title);
+    const card = await createCard(pageId, column.id, title);
+    if (newCardLink.trim()) {
+      const { updateCard } = await import("@/lib/db-helpers");
+      await updateCard(card.id, { link: newCardLink.trim() });
+    }
     setNewCardTitle("");
+    setNewCardLink("");
     setIsAddingCard(false);
-  }, [newCardTitle, pageId, column.id]);
+  }, [newCardTitle, newCardLink, pageId, column.id]);
 
   const handleRenameSubmit = useCallback(() => {
     const title = editTitle.trim();
@@ -65,7 +71,7 @@ export function KanbanColumn({
   }, [editTitle, column.id, column.title, onRenameColumn]);
 
   return (
-    <div className="flex w-72 shrink-0 flex-col rounded-xl bg-muted/30 border border-border/40">
+    <div className="flex w-72 shrink-0 flex-col rounded-xl bg-muted/30 border border-border/40 max-h-full overflow-hidden">
       {/* Column header */}
       <div className="flex items-center gap-2 px-3 py-2.5">
         {isEditingTitle ? (
@@ -125,7 +131,7 @@ export function KanbanColumn({
       </div>
 
       {/* Cards area — droppable */}
-      <div ref={setNodeRef} className="flex-1 px-2 pb-2">
+      <div ref={setNodeRef} className="flex-1 min-h-0 overflow-y-auto px-2 pb-2">
         <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-1.5">
             {sortedCards.map((card) => (
@@ -152,6 +158,21 @@ export function KanbanColumn({
                 if (e.key === "Enter") handleAddCard();
                 if (e.key === "Escape") {
                   setNewCardTitle("");
+                  setNewCardLink("");
+                  setIsAddingCard(false);
+                }
+              }}
+              className="h-8 text-[13px]"
+            />
+            <Input
+              placeholder="Link URL (optional)…"
+              value={newCardLink}
+              onChange={(e) => setNewCardLink(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleAddCard();
+                if (e.key === "Escape") {
+                  setNewCardTitle("");
+                  setNewCardLink("");
                   setIsAddingCard(false);
                 }
               }}
@@ -166,6 +187,7 @@ export function KanbanColumn({
                 variant="ghost"
                 onClick={() => {
                   setNewCardTitle("");
+                  setNewCardLink("");
                   setIsAddingCard(false);
                 }}
               >

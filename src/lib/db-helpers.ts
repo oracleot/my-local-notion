@@ -250,6 +250,7 @@ export async function createCard(
     parentId: null,
     title,
     description: "",
+    link: "",
     order: maxOrder + 1,
     createdAt: now(),
     updatedAt: now(),
@@ -261,7 +262,7 @@ export async function createCard(
 
 export async function updateCard(
   id: string,
-  changes: Partial<Pick<KanbanCard, "title" | "description">>
+  changes: Partial<Pick<KanbanCard, "title" | "description" | "link">>
 ): Promise<void> {
   await db.kanbanCards.update(id, { ...changes, updatedAt: now() });
 }
@@ -338,6 +339,7 @@ export async function createSubtask(
     parentId: parentCardId,
     title,
     description: "",
+    link: "",
     order: maxOrder + 1,
     createdAt: now(),
     updatedAt: now(),

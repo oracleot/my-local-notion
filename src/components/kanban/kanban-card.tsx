@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { KanbanCard as KanbanCardType, KanbanColumn } from "@/types";
-import { GripVertical, ListTodo, ArrowUpRight } from "lucide-react";
+import { GripVertical, ListTodo, ArrowUpRight, ExternalLink } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -98,6 +98,20 @@ export function KanbanCard({ card, allCards, columns, onOpen }: KanbanCardProps)
           <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-muted-foreground/60">
             {card.description}
           </p>
+        )}
+
+        {/* Clickable link */}
+        {card.link && (
+          <a
+            href={card.link.startsWith("http") ? card.link : `https://${card.link}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="mt-1.5 flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors truncate"
+          >
+            <ExternalLink className="h-3 w-3 shrink-0" />
+            <span className="truncate">{card.link.replace(/^https?:\/\//, "")}</span>
+          </a>
         )}
 
         {/* Subtask progress badge for parent cards */}

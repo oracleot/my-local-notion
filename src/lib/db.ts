@@ -32,4 +32,17 @@ db.version(3).stores({
   deletions: "id, [entityType+entityId]",
 });
 
+// Add link field to kanban cards
+db.version(4).stores({
+  pages: "id, parentId, updatedAt",
+  kanbanCards: "id, pageId, columnId, parentId",
+  deletions: "id, [entityType+entityId]",
+}).upgrade(tx => {
+  return tx.table("kanbanCards").toCollection().modify(card => {
+    if (card.link === undefined) {
+      card.link = "";
+    }
+  });
+});
+
 export { db };
