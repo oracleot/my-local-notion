@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from "dexie";
-import type { Page, KanbanCard, Deletion, TimeBlock, FocusSettings } from "@/types";
+import type { Page, KanbanCard, Deletion, TimeBlock, FocusSettings, SessionLog } from "@/types";
 
 const db = new Dexie("NotionCloneDB") as Dexie & {
   pages: EntityTable<Page, "id">;
@@ -7,6 +7,7 @@ const db = new Dexie("NotionCloneDB") as Dexie & {
   deletions: EntityTable<Deletion, "id">;
   timeBlocks: EntityTable<TimeBlock, "id">;
   focusSettings: EntityTable<FocusSettings, "id">;
+  sessionLogs: EntityTable<SessionLog, "id">;
 };
 
 db.version(1).stores({
@@ -60,6 +61,16 @@ db.version(5).stores({
       page.doneColumnId = null;
     }
   });
+});
+
+// Add sessionLogs table for Zen mode journal
+db.version(6).stores({
+  pages: "id, parentId, updatedAt",
+  kanbanCards: "id, pageId, columnId, parentId",
+  deletions: "id, [entityType+entityId]",
+  timeBlocks: "id, cardId, pageId, date",
+  focusSettings: "id",
+  sessionLogs: "id, cardId",
 });
 
 export { db };

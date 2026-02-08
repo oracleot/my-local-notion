@@ -11,11 +11,12 @@ import { Button } from "@/components/ui/button";
 import { 
   updateCard, 
   deleteCard, 
-  createSubtask,
   promoteSubtask,
 } from "@/lib/db-helpers";
 import type { KanbanCard, KanbanColumn } from "@/types";
-import { Trash2, Plus, ArrowUp, ListTodo, ArrowUpRight, CheckCircle2, Circle, ExternalLink } from "lucide-react";
+import { Trash2, ArrowUp, ArrowUpRight, ExternalLink } from "lucide-react";
+import { CardSubtasksSection } from "./card-subtasks-section";
+import { CardSessionLogs } from "./card-session-logs";
 
 interface KanbanCardDetailProps {
   card: KanbanCard | null;
@@ -36,9 +37,6 @@ export function KanbanCardDetail({
   const [description, setDescription] = useState(card?.description ?? "");
   const [link, setLink] = useState(card?.link ?? "");
   const [prevCardId, setPrevCardId] = useState<string | null>(null);
-  const [isAddingSubtask, setIsAddingSubtask] = useState(false);
-  const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
-  const [newSubtaskLink, setNewSubtaskLink] = useState("");
 
   // Sync local state when card changes
   if (card && card.id !== prevCardId) {
@@ -56,13 +54,6 @@ export function KanbanCardDetail({
   const subtasks = card?.parentId === null 
     ? allCards.filter(c => c.parentId === card?.id)
     : [];
-  
-  // Sort columns and find done column
-  const sortedColumns = [...columns].sort((a, b) => a.order - b.order);
-  const doneColumnId = sortedColumns[sortedColumns.length - 1]?.id;
-  
-  const getColumnName = (columnId: string) => 
-    columns.find(c => c.id === columnId)?.title ?? "Unknown";
 
   const handleSave = useCallback(async () => {
     if (!card) return;
@@ -80,26 +71,11 @@ export function KanbanCardDetail({
     onClose();
   }, [card, onClose]);
 
-  const handleAddSubtask = useCallback(async () => {
-    if (!card || !newSubtaskTitle.trim()) return;
-    const subtask = await createSubtask(card.id, card.columnId, newSubtaskTitle.trim());
-    if (newSubtaskLink.trim()) {
-      await updateCard(subtask.id, { link: newSubtaskLink.trim() });
-    }
-    setNewSubtaskTitle("");
-    setNewSubtaskLink("");
-    setIsAddingSubtask(false);
-  }, [card, newSubtaskTitle, newSubtaskLink]);
-
   const handlePromote = useCallback(async () => {
     if (!card) return;
     await promoteSubtask(card.id);
     onClose();
   }, [card, onClose]);
-
-  const handleOpenSubtask = useCallback((subtask: KanbanCard) => {
-    onOpenCard(subtask);
-  }, [onOpenCard]);
 
   return (
     <Dialog open={!!card} onOpenChange={(open) => !open && handleSave()}>
@@ -178,103 +154,16 @@ export function KanbanCardDetail({
 
           {/* Subtasks section for parent cards only */}
           {!isSubtask && card && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground">
-                  <ListTodo className="h-3.5 w-3.5" />
-                  Subtasks ({subtasks.length})
-                </label>
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => setIsAddingSubtask(true)}
-                  className="text-muted-foreground"
-                >
-                  <Plus className="h-3 w-3" />
-                  Add
-                </Button>
-              </div>
-
-              {/* Subtask list */}
-              {subtasks.length > 0 && (
-                <div className="space-y-1 rounded-md border border-border/50 bg-muted/20 p-2">
-                  {subtasks.map((subtask) => {
-                    const isDone = subtask.columnId === doneColumnId;
-                    return (
-                      <button
-                        key={subtask.id}
-                        onClick={() => handleOpenSubtask(subtask)}
-                        className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[12px] hover:bg-muted/50 transition-colors"
-                      >
-                        {isDone ? (
-                          <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
-                        ) : (
-                          <Circle className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
-                        )}
-                        <span className={`flex-1 truncate ${isDone ? "text-muted-foreground line-through" : ""}`}>
-                          {subtask.title || "Untitled"}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground/50 shrink-0">
-                          {getColumnName(subtask.columnId)}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Add subtask form */}
-              {isAddingSubtask && (
-                <div className="space-y-1.5">
-                  <Input
-                    autoFocus
-                    placeholder="Subtask title…"
-                    value={newSubtaskTitle}
-                    onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleAddSubtask();
-                      if (e.key === "Escape") {
-                        setNewSubtaskTitle("");
-                        setNewSubtaskLink("");
-                        setIsAddingSubtask(false);
-                      }
-                    }}
-                    className="h-8 text-[13px]"
-                  />
-                  <Input
-                    placeholder="Link URL (optional)…"
-                    value={newSubtaskLink}
-                    onChange={(e) => setNewSubtaskLink(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleAddSubtask();
-                      if (e.key === "Escape") {
-                        setNewSubtaskTitle("");
-                        setNewSubtaskLink("");
-                        setIsAddingSubtask(false);
-                      }
-                    }}
-                    className="h-8 text-[13px]"
-                  />
-                  <div className="flex gap-1.5">
-                    <Button size="xs" onClick={handleAddSubtask}>
-                      Add
-                    </Button>
-                    <Button
-                      size="xs"
-                      variant="ghost"
-                      onClick={() => {
-                        setNewSubtaskTitle("");
-                        setNewSubtaskLink("");
-                        setIsAddingSubtask(false);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <CardSubtasksSection
+              card={card}
+              subtasks={subtasks}
+              columns={columns}
+              onOpenCard={onOpenCard}
+            />
           )}
+
+          {/* Session Notes */}
+          {card && <CardSessionLogs cardId={card.id} />}
         </div>
 
         <DialogFooter className="flex-row justify-between sm:justify-between">

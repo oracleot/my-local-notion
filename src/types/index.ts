@@ -87,3 +87,12 @@ export interface FocusSession {
   remainingSeconds: number;
   isRunning: boolean;
 }
+
+// ─── Session Logs (Zen Mode Journal) ─────────────────────────────────────────
+
+export interface SessionLog {
+  id: string;
+  cardId: string;
+  content: string;
+  createdAt: Date;
+}

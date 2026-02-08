@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, lazy, Suspense } from "react";
 import { Outlet } from "react-router";
 import { useAppStore } from "@/stores/app-store";
 import { Sidebar } from "./sidebar";
@@ -15,9 +15,16 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 
+const ZenModeOverlay = lazy(() =>
+  import("@/components/focus/zen-mode-overlay").then((m) => ({
+    default: m.ZenModeOverlay,
+  }))
+);
+
 export function AppLayout() {
   const { sidebarOpen, sidebarWidth, setSidebarWidth, toggleSidebar } =
     useAppStore();
+  const zenMode = useAppStore((s) => s.zenMode);
   const isResizing = useRef(false);
 
   const handleMouseDown = useCallback(
@@ -110,6 +117,13 @@ export function AppLayout() {
           </div>
         </main>
       </div>
+
+      {/* Zen Mode overlay (lazy-loaded) */}
+      {zenMode && (
+        <Suspense fallback={null}>
+          <ZenModeOverlay />
+        </Suspense>
+      )}
     </TooltipProvider>
   );
 }

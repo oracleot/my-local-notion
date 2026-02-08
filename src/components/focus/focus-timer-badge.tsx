@@ -8,7 +8,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Target, Pause, Play, Square, Plus } from "lucide-react";
+import { Target } from "lucide-react";
+import { TimerBadgeControls } from "./timer-badge-controls";
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -19,6 +20,7 @@ function formatTime(seconds: number): string {
 export function FocusTimerBadge() {
   const navigate = useNavigate();
   const session = useAppStore((s) => s.activeSession);
+  const toggleZenMode = useAppStore((s) => s.toggleZenMode);
   const { pause, resume, stop, extend } = useFocusTimer();
   const [showControls, setShowControls] = useState(false);
   const controlsRef = useRef<HTMLDivElement>(null);
@@ -81,108 +83,29 @@ export function FocusTimerBadge() {
           hover:opacity-80
         `}
       >
-        {/* Pulsing indicator */}
         <span className="relative flex h-2 w-2">
           {session.isRunning && !isComplete && (
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-60" />
           )}
           <span className="relative inline-flex h-2 w-2 rounded-full bg-current" />
         </span>
-
-        <span className="max-w-[120px] truncate">
-          {session.cardTitle}
-        </span>
-
+        <span className="max-w-[120px] truncate">{session.cardTitle}</span>
         <span className="font-mono text-[12px] tabular-nums opacity-80">
           {formatTime(session.remainingSeconds)}
         </span>
       </button>
 
-      {/* Quick controls popover */}
       {showControls && (
-        <div className="absolute right-0 top-full z-50 mt-1.5 flex items-center gap-1 rounded-lg border border-border bg-popover p-1.5 shadow-lg">
-          {!isComplete && (
-            <>
-              {session.isRunning ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => {
-                        pause();
-                        setShowControls(false);
-                      }}
-                    >
-                      <Pause className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">
-                    Pause
-                  </TooltipContent>
-                </Tooltip>
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => {
-                        resume();
-                        setShowControls(false);
-                      }}
-                    >
-                      <Play className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">
-                    Resume
-                  </TooltipContent>
-                </Tooltip>
-              )}
-            </>
-          )}
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => {
-                  extend(15 * 60);
-                  setShowControls(false);
-                }}
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">
-              +15 min
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-destructive hover:text-destructive"
-                onClick={() => {
-                  stop();
-                  setShowControls(false);
-                }}
-              >
-                <Square className="h-3.5 w-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">
-              Stop
-            </TooltipContent>
-          </Tooltip>
-        </div>
+        <TimerBadgeControls
+          isRunning={session.isRunning}
+          isComplete={isComplete}
+          onPause={pause}
+          onResume={resume}
+          onStop={stop}
+          onExtend={() => extend(15 * 60)}
+          onZenMode={toggleZenMode}
+          onDismiss={() => setShowControls(false)}
+        />
       )}
     </div>
   );

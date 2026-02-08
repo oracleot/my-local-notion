@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { removeTimeBlocksForCard } from "@/lib/focus-helpers";
-import type { Page, KanbanCard, KanbanColumn, PageType, Deletion, DeletableEntityType } from "@/types";
+import type { Page, KanbanCard, KanbanColumn, PageType, Deletion, DeletableEntityType, SessionLog } from "@/types";
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
@@ -121,17 +121,18 @@ export async function deletePage(id: string): Promise<void> {
 
   await collectDescendants(id);
 
-  await db.transaction("rw", db.pages, db.kanbanCards, db.deletions, db.timeBlocks, async () => {
+  await db.transaction("rw", db.pages, db.kanbanCards, db.deletions, db.timeBlocks, db.sessionLogs, async () => {
     // Get all kanban cards for these pages (to log deletions)
     const cardsToDelete = await db.kanbanCards
       .where("pageId")
       .anyOf(idsToDelete)
       .toArray();
 
-    // Log deletions for cards and clean up time blocks
+    // Log deletions for cards and clean up time blocks + session logs
     for (const card of cardsToDelete) {
       await logDeletion("kanbanCard", card.id);
       await removeTimeBlocksForCard(card.id);
+      await db.sessionLogs.where("cardId").equals(card.id).delete();
     }
 
     // Remove time blocks for pages being deleted
@@ -287,23 +288,25 @@ export async function moveCard(
 }
 
 export async function deleteCard(id: string): Promise<void> {
-  // Cascade delete all subtasks and log deletions
-  await db.transaction("rw", db.kanbanCards, db.deletions, db.timeBlocks, async () => {
+  // Cascade delete all subtasks, session logs, and log deletions
+  await db.transaction("rw", db.kanbanCards, db.deletions, db.timeBlocks, db.sessionLogs, async () => {
     // Get all subtasks for this card
     const subtasks = await db.kanbanCards
       .where("parentId")
       .equals(id)
       .toArray();
     
-    // Log deletions and delete subtasks
+    // Log deletions and delete subtasks + their session logs
     for (const subtask of subtasks) {
       await logDeletion("kanbanCard", subtask.id);
       await removeTimeBlocksForCard(subtask.id);
+      await db.sessionLogs.where("cardId").equals(subtask.id).delete();
       await db.kanbanCards.delete(subtask.id);
     }
     
-    // Remove time blocks, log deletion, and delete the card itself
+    // Remove time blocks, session logs, log deletion, and delete the card itself
     await removeTimeBlocksForCard(id);
+    await db.sessionLogs.where("cardId").equals(id).delete();
     await logDeletion("kanbanCard", id);
     await db.kanbanCards.delete(id);
   });
@@ -389,6 +392,28 @@ export async function promoteSubtask(subtaskId: string): Promise<void> {
   if (card.parentId === null) return; // Already a standalone card
   
   await db.kanbanCards.update(subtaskId, { parentId: null, updatedAt: now() });
+}
+
+// ─── Session Log CRUD ────────────────────────────────────────────────────────
+
+export async function createSessionLog(cardId: string, content: string): Promise<SessionLog> {
+  const log: SessionLog = {
+    id: generateId(),
+    cardId,
+    content,
+    createdAt: now(),
+  };
+  await db.sessionLogs.add(log);
+  return log;
+}
+
+export async function getSessionLogs(cardId: string): Promise<SessionLog[]> {
+  const logs = await db.sessionLogs.where("cardId").equals(cardId).toArray();
+  return logs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function deleteSessionLog(id: string): Promise<void> {
+  await db.sessionLogs.delete(id);
 }
 
 /**

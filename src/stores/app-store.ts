@@ -36,6 +36,10 @@ interface AppState {
   endSession: () => void;
   extendSession: (additionalSeconds: number) => void;
   loadFocusSettings: (settings: Pick<FocusSettings, "workMinutes" | "breakMinutes" | "audioEnabled">) => void;
+
+  // Zen mode
+  zenMode: boolean;
+  toggleZenMode: () => void;
 }
 
 function applyTheme(theme: Theme) {
@@ -113,6 +117,14 @@ export const useAppStore = create<AppState>()((set, get) => {
     activeSession: null,
     focusSettings: { workMinutes: 60, breakMinutes: 10, audioEnabled: true },
 
+    // Zen mode
+    zenMode: false,
+    toggleZenMode: () => {
+      const session = get().activeSession;
+      if (!session) return; // No-op if no active session
+      set((s) => ({ zenMode: !s.zenMode }));
+    },
+
     startSession: ({ cardId, cardTitle, boardName, pageId, timeBlockId, durationSeconds }) => {
       set({
         activeSession: {
@@ -149,7 +161,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     },
 
     endSession: () => {
-      set({ activeSession: null });
+      set({ activeSession: null, zenMode: false });
     },
 
     extendSession: (additionalSeconds) => {

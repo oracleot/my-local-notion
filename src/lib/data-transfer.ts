@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import type { Page, KanbanCard, Deletion, DeletableEntityType, TimeBlock, FocusSettings } from "@/types";
+import type { Page, KanbanCard, Deletion, DeletableEntityType, TimeBlock, FocusSettings, SessionLog } from "@/types";
 
 // ─── Export File Format ──────────────────────────────────────────────────────
 
@@ -11,6 +11,7 @@ interface ExportData {
   deletions: Deletion[];
   timeBlocks?: TimeBlock[];
   focusSettings?: FocusSettings | null;
+  sessionLogs?: SessionLog[];
 }
 
 export interface ImportResult {
@@ -24,12 +25,13 @@ export interface ImportResult {
 // ─── Export ──────────────────────────────────────────────────────────────────
 
 export async function exportWorkspace(): Promise<Blob> {
-  const [pages, kanbanCards, deletions, timeBlocks, focusSettingsRow] = await Promise.all([
+  const [pages, kanbanCards, deletions, timeBlocks, focusSettingsRow, sessionLogs] = await Promise.all([
     db.pages.toArray(),
     db.kanbanCards.toArray(),
     db.deletions.toArray(),
     db.timeBlocks.toArray(),
     db.focusSettings.get("settings"),
+    db.sessionLogs.toArray(),
   ]);
 
   const data: ExportData = {
@@ -40,6 +42,7 @@ export async function exportWorkspace(): Promise<Blob> {
     deletions,
     timeBlocks,
     focusSettings: focusSettingsRow ?? null,
+    sessionLogs,
   };
 
   return new Blob([JSON.stringify(data, null, 2)], {
@@ -79,7 +82,7 @@ export async function importWorkspace(file: File): Promise<ImportResult> {
     deletionsApplied: 0,
   };
 
-  await db.transaction("rw", [db.pages, db.kanbanCards, db.deletions, db.timeBlocks, db.focusSettings], async () => {
+  await db.transaction("rw", [db.pages, db.kanbanCards, db.deletions, db.timeBlocks, db.focusSettings, db.sessionLogs], async () => {
     // Build local deletion lookup: entityType+entityId → deletedAt
     const localDeletions = await db.deletions.toArray();
     const localDeletionMap = new Map<string, Date>();
@@ -256,6 +259,20 @@ export async function importWorkspace(file: File): Promise<ImportResult> {
         await db.focusSettings.add(data.focusSettings);
       }
       // Don't overwrite existing settings — user preference
+    }
+
+    // ─── Merge Session Logs ────────────────────────────────────────────────
+    if (data.sessionLogs) {
+      for (const importLog of data.sessionLogs) {
+        const existing = await db.sessionLogs.get(importLog.id);
+        if (!existing) {
+          await db.sessionLogs.add({
+            ...importLog,
+            createdAt: new Date(importLog.createdAt),
+          });
+        }
+        // Skip duplicates (merge by id)
+      }
     }
   });
 

@@ -20,6 +20,7 @@ export function useGlobalShortcuts() {
   const activeSession = useAppStore((s) => s.activeSession);
   const pauseSession = useAppStore((s) => s.pauseSession);
   const resumeSession = useAppStore((s) => s.resumeSession);
+  const toggleZenMode = useAppStore((s) => s.toggleZenMode);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -53,6 +54,15 @@ export function useGlobalShortcuts() {
         return;
       }
 
+      // ⌘+Shift+Z → Toggle Zen mode (only when session active)
+      if (meta && e.shiftKey && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        if (activeSession) {
+          toggleZenMode();
+        }
+        return;
+      }
+
       // ⌘+N → new page
       if (meta && e.key === "n") {
         e.preventDefault();
@@ -65,5 +75,5 @@ export function useGlobalShortcuts() {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [toggleSidebar, cycleTheme, navigate, activeSession, pauseSession, resumeSession]);
+  }, [toggleSidebar, cycleTheme, navigate, activeSession, pauseSession, resumeSession, toggleZenMode]);
 }
