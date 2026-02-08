@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { AppLayout } from "@/components/layout/app-layout";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageView } from "@/components/pages/page-view";
+import { FocusView } from "@/components/focus/focus-view";
 
 function WelcomeRedirect() {
   const latestPage = useLiveQuery(() =>
@@ -26,6 +27,7 @@ function App() {
       <Route element={<AppLayout />}>
         <Route index element={<WelcomeRedirect />} />
         <Route path="page/:pageId" element={<PageView />} />
+        <Route path="focus" element={<FocusView />} />
       </Route>
     </Routes>
   );

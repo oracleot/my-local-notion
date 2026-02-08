@@ -19,6 +19,7 @@ import {
   deleteColumn,
   moveCard,
 } from "@/lib/db-helpers";
+import { getDoneColumnId } from "@/lib/focus-helpers";
 import type { Page, KanbanCard as KanbanCardType } from "@/types";
 import { KanbanColumn } from "@/components/kanban/kanban-column";
 import { KanbanCardDetail } from "@/components/kanban/kanban-card-detail";
@@ -151,6 +152,16 @@ export function KanbanBoard({ page }: KanbanBoardProps) {
     [page.id]
   );
 
+  const handleSetDoneColumn = useCallback(
+    async (columnId: string | null) => {
+      await db.pages.update(page.id, {
+        doneColumnId: columnId,
+        updatedAt: new Date(),
+      });
+    },
+    [page.id]
+  );
+
   const handleOpenCard = useCallback((card: KanbanCardType) => {
     setDetailCard(card);
   }, []);
@@ -158,6 +169,8 @@ export function KanbanBoard({ page }: KanbanBoardProps) {
   const activeCard = activeCardId
     ? cards?.find((c) => c.id === activeCardId)
     : null;
+
+  const doneColumnId = getDoneColumnId(page);
 
   if (cards === undefined) {
     return (
@@ -190,8 +203,10 @@ export function KanbanBoard({ page }: KanbanBoardProps) {
               allCards={cards ?? []}
               allColumns={columns}
               pageId={page.id}
+              isDoneColumn={col.id === doneColumnId}
               onRenameColumn={handleRenameColumn}
               onDeleteColumn={handleDeleteColumn}
+              onSetDoneColumn={handleSetDoneColumn}
               onOpenCard={handleOpenCard}
             />
           ))}

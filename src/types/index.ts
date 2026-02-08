@@ -16,6 +16,7 @@ export interface Page {
   icon: string | null;
   pageType: PageType;
   columns: KanbanColumn[];
+  doneColumnId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,4 +51,39 @@ export interface Deletion {
   entityType: DeletableEntityType;
   entityId: string;
   deletedAt: Date;
+}
+
+// ─── Focus Mode ──────────────────────────────────────────────────────────────
+
+export type TimeBlockStatus = "scheduled" | "completed" | "skipped";
+
+export interface TimeBlock {
+  id: string;
+  cardId: string;
+  pageId: string;
+  date: string; // ISO date YYYY-MM-DD
+  startHour: number; // 0-23
+  durationMinutes: number; // default 60
+  status: TimeBlockStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface FocusSettings {
+  id: string; // Always "settings"
+  workMinutes: number; // default 60
+  breakMinutes: number; // default 10
+  audioEnabled: boolean; // default true
+  dayStartHour: number; // default 8
+  dayEndHour: number; // default 18
+}
+
+export interface FocusSession {
+  cardId: string;
+  cardTitle: string;
+  boardName: string;
+  pageId: string;
+  timeBlockId: string | null;
+  remainingSeconds: number;
+  isRunning: boolean;
 }

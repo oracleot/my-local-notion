@@ -10,12 +10,16 @@ import { exportWorkspace, downloadExport } from "@/lib/data-transfer";
  * - ⌘+N → create new page
  * - ⌘+Shift+L → cycle theme (light → dark → system)
  * - ⌘+Shift+E → quick export (direct download)
+ * - ⌘+Shift+F → navigate to Focus view
  * (⌘+K is handled inside SearchDialog)
  */
 export function useGlobalShortcuts() {
   const navigate = useNavigate();
   const toggleSidebar = useAppStore((s) => s.toggleSidebar);
   const cycleTheme = useAppStore((s) => s.cycleTheme);
+  const activeSession = useAppStore((s) => s.activeSession);
+  const pauseSession = useAppStore((s) => s.pauseSession);
+  const resumeSession = useAppStore((s) => s.resumeSession);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -42,6 +46,13 @@ export function useGlobalShortcuts() {
         return;
       }
 
+      // ⌘+Shift+F → Focus view
+      if (meta && e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        navigate("/focus");
+        return;
+      }
+
       // ⌘+N → new page
       if (meta && e.key === "n") {
         e.preventDefault();
@@ -54,5 +65,5 @@ export function useGlobalShortcuts() {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [toggleSidebar, cycleTheme, navigate]);
+  }, [toggleSidebar, cycleTheme, navigate, activeSession, pauseSession, resumeSession]);
 }

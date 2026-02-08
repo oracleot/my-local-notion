@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import type { Page, KanbanCard, Deletion, DeletableEntityType } from "@/types";
+import type { Page, KanbanCard, Deletion, DeletableEntityType, TimeBlock, FocusSettings } from "@/types";
 
 // ─── Export File Format ──────────────────────────────────────────────────────
 
@@ -9,6 +9,8 @@ interface ExportData {
   pages: Page[];
   kanbanCards: KanbanCard[];
   deletions: Deletion[];
+  timeBlocks?: TimeBlock[];
+  focusSettings?: FocusSettings | null;
 }
 
 export interface ImportResult {
@@ -22,10 +24,12 @@ export interface ImportResult {
 // ─── Export ──────────────────────────────────────────────────────────────────
 
 export async function exportWorkspace(): Promise<Blob> {
-  const [pages, kanbanCards, deletions] = await Promise.all([
+  const [pages, kanbanCards, deletions, timeBlocks, focusSettingsRow] = await Promise.all([
     db.pages.toArray(),
     db.kanbanCards.toArray(),
     db.deletions.toArray(),
+    db.timeBlocks.toArray(),
+    db.focusSettings.get("settings"),
   ]);
 
   const data: ExportData = {
@@ -34,6 +38,8 @@ export async function exportWorkspace(): Promise<Blob> {
     pages,
     kanbanCards,
     deletions,
+    timeBlocks,
+    focusSettings: focusSettingsRow ?? null,
   };
 
   return new Blob([JSON.stringify(data, null, 2)], {
@@ -73,7 +79,7 @@ export async function importWorkspace(file: File): Promise<ImportResult> {
     deletionsApplied: 0,
   };
 
-  await db.transaction("rw", db.pages, db.kanbanCards, db.deletions, async () => {
+  await db.transaction("rw", [db.pages, db.kanbanCards, db.deletions, db.timeBlocks, db.focusSettings], async () => {
     // Build local deletion lookup: entityType+entityId → deletedAt
     const localDeletions = await db.deletions.toArray();
     const localDeletionMap = new Map<string, Date>();
@@ -217,6 +223,39 @@ export async function importWorkspace(file: File): Promise<ImportResult> {
           }
         }
       }
+    }
+
+    // ─── Merge Time Blocks ─────────────────────────────────────────────────
+    if (data.timeBlocks) {
+      for (const importBlock of data.timeBlocks) {
+        const existing = await db.timeBlocks.get(importBlock.id);
+        if (!existing) {
+          await db.timeBlocks.add({
+            ...importBlock,
+            createdAt: new Date(importBlock.createdAt),
+            updatedAt: new Date(importBlock.updatedAt),
+          });
+        } else {
+          const importUpdatedAt = new Date(importBlock.updatedAt);
+          const localUpdatedAt = new Date(existing.updatedAt);
+          if (importUpdatedAt > localUpdatedAt) {
+            await db.timeBlocks.put({
+              ...importBlock,
+              createdAt: new Date(importBlock.createdAt),
+              updatedAt: importUpdatedAt,
+            });
+          }
+        }
+      }
+    }
+
+    // ─── Merge Focus Settings ──────────────────────────────────────────────
+    if (data.focusSettings) {
+      const existing = await db.focusSettings.get("settings");
+      if (!existing) {
+        await db.focusSettings.add(data.focusSettings);
+      }
+      // Don't overwrite existing settings — user preference
     }
   });
 

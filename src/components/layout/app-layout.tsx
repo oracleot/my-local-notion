@@ -4,6 +4,7 @@ import { useAppStore } from "@/stores/app-store";
 import { Sidebar } from "./sidebar";
 import { SearchDialog } from "@/components/shared/search-dialog";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { FocusTimerBadge } from "@/components/focus/focus-timer-badge";
 import { useGlobalShortcuts } from "@/lib/use-global-shortcuts";
 import { PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -96,8 +97,12 @@ export function AppLayout() {
                 </Tooltip>
               )}
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-1.5">
+              <FocusTimerBadge />
+              <ThemeToggle />
+            </div>
           </div>
+
 
           {/* Page content */}
           <div className="flex-1 overflow-auto">

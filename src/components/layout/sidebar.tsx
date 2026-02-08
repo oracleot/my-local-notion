@@ -28,6 +28,7 @@ import {
   LayoutGrid,
   Settings,
   Upload,
+  Target,
 } from "lucide-react";
 import type { PageType } from "@/types";
 
@@ -73,7 +74,7 @@ export function Sidebar() {
       </div>
 
       {/* ── Quick actions ── */}
-      <div className="px-2.5 py-1.5">
+      <div className="px-2.5 py-1.5 space-y-0.5">
         <Button
           variant="ghost"
           className="w-full justify-start gap-2.5 h-7 px-2 text-[13px] text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent font-normal"
@@ -91,6 +92,16 @@ export function Sidebar() {
           <Search className="h-3.5 w-3.5 opacity-60" />
           Search
           <kbd className="ml-auto font-mono text-[10px] opacity-40">⌘K</kbd>
+        </Button>
+
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-2.5 h-7 px-2 text-[13px] text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent font-normal"
+          onClick={() => navigate("/focus")}
+        >
+          <Target className="h-3.5 w-3.5 opacity-60" />
+          Focus
+          <kbd className="ml-auto font-mono text-[10px] opacity-40">⌘⇧F</kbd>
         </Button>
       </div>
 

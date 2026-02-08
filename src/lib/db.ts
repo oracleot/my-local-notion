@@ -1,10 +1,12 @@
 import Dexie, { type EntityTable } from "dexie";
-import type { Page, KanbanCard, Deletion } from "@/types";
+import type { Page, KanbanCard, Deletion, TimeBlock, FocusSettings } from "@/types";
 
 const db = new Dexie("NotionCloneDB") as Dexie & {
   pages: EntityTable<Page, "id">;
   kanbanCards: EntityTable<KanbanCard, "id">;
   deletions: EntityTable<Deletion, "id">;
+  timeBlocks: EntityTable<TimeBlock, "id">;
+  focusSettings: EntityTable<FocusSettings, "id">;
 };
 
 db.version(1).stores({
@@ -41,6 +43,21 @@ db.version(4).stores({
   return tx.table("kanbanCards").toCollection().modify(card => {
     if (card.link === undefined) {
       card.link = "";
+    }
+  });
+});
+
+// Add focus mode tables (timeBlocks, focusSettings) & doneColumnId on pages
+db.version(5).stores({
+  pages: "id, parentId, updatedAt",
+  kanbanCards: "id, pageId, columnId, parentId",
+  deletions: "id, [entityType+entityId]",
+  timeBlocks: "id, cardId, pageId, date",
+  focusSettings: "id",
+}).upgrade(tx => {
+  return tx.table("pages").toCollection().modify(page => {
+    if (page.doneColumnId === undefined) {
+      page.doneColumnId = null;
     }
   });
 });

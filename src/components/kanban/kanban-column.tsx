@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Plus, Trash2, Pencil } from "lucide-react";
+import { MoreHorizontal, Plus, Trash2, Pencil, CheckCircle2 } from "lucide-react";
 
 interface KanbanColumnProps {
   column: KanbanColumnType;
@@ -23,8 +23,10 @@ interface KanbanColumnProps {
   allCards: KanbanCardType[];
   allColumns: KanbanColumnType[];
   pageId: string;
+  isDoneColumn?: boolean;
   onRenameColumn: (columnId: string, title: string) => void;
   onDeleteColumn: (columnId: string) => void;
+  onSetDoneColumn: (columnId: string | null) => void;
   onOpenCard: (card: KanbanCardType) => void;
 }
 
@@ -34,8 +36,10 @@ export function KanbanColumn({
   allCards,
   allColumns,
   pageId,
+  isDoneColumn = false,
   onRenameColumn,
   onDeleteColumn,
+  onSetDoneColumn,
   onOpenCard,
 }: KanbanColumnProps) {
   const [isAddingCard, setIsAddingCard] = useState(false);
@@ -90,7 +94,10 @@ export function KanbanColumn({
             className="h-7 text-[13px] font-semibold"
           />
         ) : (
-          <h3 className="flex-1 truncate text-[13px] font-semibold text-foreground/80">
+          <h3 className="flex flex-1 items-center gap-1.5 truncate text-[13px] font-semibold text-foreground/80">
+            {isDoneColumn && (
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+            )}
             {column.title}
           </h3>
         )}
@@ -109,7 +116,7 @@ export function KanbanColumn({
               <MoreHorizontal className="h-3.5 w-3.5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuContent align="end" className="w-44">
             <DropdownMenuItem
               onClick={() => {
                 setEditTitle(column.title);
@@ -118,6 +125,12 @@ export function KanbanColumn({
             >
               <Pencil className="h-3.5 w-3.5" />
               Rename
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onSetDoneColumn(isDoneColumn ? null : column.id)}
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {isDoneColumn ? "Unmark as done" : "Mark as done column"}
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"

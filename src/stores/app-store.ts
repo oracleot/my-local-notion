@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { FocusSession, FocusSettings } from "@/types";
 
 type Theme = "light" | "dark" | "system";
 
@@ -17,6 +18,24 @@ interface AppState {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   cycleTheme: () => void;
+
+  // Focus mode
+  activeSession: FocusSession | null;
+  focusSettings: Pick<FocusSettings, "workMinutes" | "breakMinutes" | "audioEnabled">;
+  startSession: (params: {
+    cardId: string;
+    cardTitle: string;
+    boardName: string;
+    pageId: string;
+    timeBlockId?: string | null;
+    durationSeconds: number;
+  }) => void;
+  pauseSession: () => void;
+  resumeSession: () => void;
+  tickSession: () => void;
+  endSession: () => void;
+  extendSession: (additionalSeconds: number) => void;
+  loadFocusSettings: (settings: Pick<FocusSettings, "workMinutes" | "breakMinutes" | "audioEnabled">) => void;
 }
 
 function applyTheme(theme: Theme) {
@@ -88,6 +107,66 @@ export const useAppStore = create<AppState>()((set, get) => {
       applyTheme(next);
       setupSystemThemeListener(next);
       set({ theme: next });
+    },
+
+    // Focus mode
+    activeSession: null,
+    focusSettings: { workMinutes: 60, breakMinutes: 10, audioEnabled: true },
+
+    startSession: ({ cardId, cardTitle, boardName, pageId, timeBlockId, durationSeconds }) => {
+      set({
+        activeSession: {
+          cardId,
+          cardTitle,
+          boardName,
+          pageId,
+          timeBlockId: timeBlockId ?? null,
+          remainingSeconds: durationSeconds,
+          isRunning: true,
+        },
+      });
+    },
+
+    pauseSession: () => {
+      const session = get().activeSession;
+      if (session) set({ activeSession: { ...session, isRunning: false } });
+    },
+
+    resumeSession: () => {
+      const session = get().activeSession;
+      if (session) set({ activeSession: { ...session, isRunning: true } });
+    },
+
+    tickSession: () => {
+      const session = get().activeSession;
+      if (!session || !session.isRunning) return;
+      const next = session.remainingSeconds - 1;
+      if (next <= 0) {
+        set({ activeSession: { ...session, remainingSeconds: 0, isRunning: false } });
+      } else {
+        set({ activeSession: { ...session, remainingSeconds: next } });
+      }
+    },
+
+    endSession: () => {
+      set({ activeSession: null });
+    },
+
+    extendSession: (additionalSeconds) => {
+      const session = get().activeSession;
+      if (session) {
+        set({
+          activeSession: {
+            ...session,
+            remainingSeconds: session.remainingSeconds + additionalSeconds,
+            isRunning: true,
+          },
+        });
+      }
+    },
+
+    loadFocusSettings: (settings) => {
+      set({ focusSettings: settings });
     },
   };
 });

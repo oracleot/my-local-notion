@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { removeTimeBlocksForCard } from "@/lib/focus-helpers";
 import type { Page, KanbanCard, KanbanColumn, PageType, Deletion, DeletableEntityType } from "@/types";
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
@@ -120,16 +121,22 @@ export async function deletePage(id: string): Promise<void> {
 
   await collectDescendants(id);
 
-  await db.transaction("rw", db.pages, db.kanbanCards, db.deletions, async () => {
+  await db.transaction("rw", db.pages, db.kanbanCards, db.deletions, db.timeBlocks, async () => {
     // Get all kanban cards for these pages (to log deletions)
     const cardsToDelete = await db.kanbanCards
       .where("pageId")
       .anyOf(idsToDelete)
       .toArray();
 
-    // Log deletions for cards
+    // Log deletions for cards and clean up time blocks
     for (const card of cardsToDelete) {
       await logDeletion("kanbanCard", card.id);
+      await removeTimeBlocksForCard(card.id);
+    }
+
+    // Remove time blocks for pages being deleted
+    for (const pageId of idsToDelete) {
+      await db.timeBlocks.where("pageId").equals(pageId).delete();
     }
 
     // Log deletions for pages
@@ -281,7 +288,7 @@ export async function moveCard(
 
 export async function deleteCard(id: string): Promise<void> {
   // Cascade delete all subtasks and log deletions
-  await db.transaction("rw", db.kanbanCards, db.deletions, async () => {
+  await db.transaction("rw", db.kanbanCards, db.deletions, db.timeBlocks, async () => {
     // Get all subtasks for this card
     const subtasks = await db.kanbanCards
       .where("parentId")
@@ -291,10 +298,12 @@ export async function deleteCard(id: string): Promise<void> {
     // Log deletions and delete subtasks
     for (const subtask of subtasks) {
       await logDeletion("kanbanCard", subtask.id);
+      await removeTimeBlocksForCard(subtask.id);
       await db.kanbanCards.delete(subtask.id);
     }
     
-    // Log deletion and delete the card itself
+    // Remove time blocks, log deletion, and delete the card itself
+    await removeTimeBlocksForCard(id);
     await logDeletion("kanbanCard", id);
     await db.kanbanCards.delete(id);
   });
