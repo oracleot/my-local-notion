@@ -47,23 +47,23 @@ Entire merge runs inside a Dexie transaction for atomicity.
 
 ## Tasks
 
-- [ ] **16.1** Add `deletions` table to Dexie (`src/lib/db.ts`)
+- [x] **16.1** Add `deletions` table to Dexie (`src/lib/db.ts`)
   - Schema: `++id, [entityType+entityId]`
   - Bump DB to version 3
   - Add `Deletion` interface to `src/types/index.ts`
-- [ ] **16.2** Log deletions in `src/lib/db-helpers.ts`
+- [x] **16.2** Log deletions in `src/lib/db-helpers.ts`
   - In `deletePage`: write deletion records for the page, all descendant pages, and their kanban cards before removing entities
   - In `deleteCard`/`deleteSubtask`: write deletion record before removing the card (and subtasks if parent)
-- [ ] **16.3** Create `src/lib/data-transfer.ts` (~150 lines)
+- [x] **16.3** Create `src/lib/data-transfer.ts` (~150 lines)
   - `exportWorkspace(): Promise<Blob>` — reads all pages, kanban cards, and deletions; serializes to JSON with metadata envelope
   - `importWorkspace(file: File): Promise<ImportResult>` — parses JSON, runs merge algorithm, returns summary `{ pagesAdded, pagesUpdated, cardsAdded, cardsUpdated, deletionsApplied }`
   - Merge wrapped in Dexie transaction
-- [ ] **16.4** Create `src/components/shared/data-transfer-dialog.tsx` (~120 lines)
+- [x] **16.4** Create `src/components/shared/data-transfer-dialog.tsx` (~120 lines)
   - **Export section**: "Export Workspace" button → triggers download of `my-notebook-YYYY-MM-DD.json`
   - **Import section**: file picker / drop zone, shows merge result summary after import completes
-- [ ] **16.5** Add trigger to sidebar (`src/components/layout/sidebar.tsx`)
+- [x] **16.5** Add trigger to sidebar (`src/components/layout/sidebar.tsx`)
   - Add import/export menu item or settings gear icon near bottom of sidebar
   - Opens the data transfer dialog
-- [ ] **16.6** Add keyboard shortcut (`src/lib/use-global-shortcuts.ts`)
+- [x] **16.6** Add keyboard shortcut (`src/lib/use-global-shortcuts.ts`)
   - `⌘+Shift+E` → quick export (direct download, no dialog)
 

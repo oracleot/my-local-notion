@@ -128,37 +128,38 @@ Each phase is documented in a separate file for detailed task tracking:
 
 ### Advanced Features
 - [Phase 15 — Kanban Subtasks](phase-15-kanban-subtasks.md) ✅
-- [Phase 16 — Export/Import with Timestamp Merge](phase-16-export-import.md)
+- [Phase 16 — Export/Import with Timestamp Merge](phase-16-export-import.md) ✅
+- [Phase 17 — Focus Mode & Pomodoro Timer](phase-17-focus-mode.md)
 
 ---
 
 ## Verification Checklist
 
-- [ ] Create a document page, add rich content (headings, lists, code blocks, toggles), refresh browser → content persists
-- [ ] Create nested sub-pages 3 levels deep, verify sidebar tree renders correctly
-- [ ] Delete a parent page → all children and their kanban cards are cascade-deleted
-- [ ] Create a Kanban page, add 3 columns with cards, drag cards between columns → order persists after refresh
-- [ ] Navigate between pages via sidebar, ⌘+K search, and breadcrumbs → URL updates, correct content loads
-- [ ] Open DevTools → Application → IndexedDB → `NotionCloneDB` tables contain expected data
-- [ ] Resize sidebar, toggle it closed/open → state preserved during session
-- [ ] Empty state renders when all pages are deleted
-- [ ] Works in Chrome, Firefox, Safari (IndexedDB + BlockNote compatibility)
-- [ ] Toggle between light, dark, and system — UI updates immediately including sidebar, editor, kanban boards, and all shadcn components
-- [ ] Refresh browser — theme persists with no flash of wrong theme
-- [ ] Change OS appearance while set to "system" — app follows automatically
-- [ ] BlockNote editor adapts correctly in dark mode
-- [ ] `⌘+Shift+L` cycles the theme
-- [ ] Create a card, add subtasks from card detail → subtasks appear in same column with parent indicator
-- [ ] Move subtask to different column than parent → subtask appears in new column, parent shows updated progress (e.g., "1/2 done")
-- [ ] Delete parent card → all subtasks are cascade-deleted
-- [ ] Open subtask detail → shows "Parent: [title]" link, clicking navigates to parent
-- [ ] Attempting to add subtask to a subtask is prevented (one level only)
-- [ ] Create pages and kanban boards on device A, export → import on device B (fresh install) → all data appears
-- [ ] Make edits on both devices independently, export A, import on B → newer edits from A merge in, B's newer edits preserved
-- [ ] Delete a page on device A, export, import on B → page is removed on B
-- [ ] Edit a page on device B, delete it on device A (before the edit), import on B → page is kept (edit wins)
-- [ ] Export file is valid JSON and reasonable size
-- [ ] Build passes with no lint errors
+- [x] Create a document page, add rich content (headings, lists, code blocks, toggles), refresh browser → content persists
+- [x] Create nested sub-pages 3 levels deep, verify sidebar tree renders correctly
+- [x] Delete a parent page → all children and their kanban cards are cascade-deleted
+- [x] Create a Kanban page, add 3 columns with cards, drag cards between columns → order persists after refresh
+- [x] Navigate between pages via sidebar, ⌘+K search, and breadcrumbs → URL updates, correct content loads
+- [x] Open DevTools → Application → IndexedDB → `NotionCloneDB` tables contain expected data
+- [x] Resize sidebar, toggle it closed/open → state preserved during session
+- [x] Empty state renders when all pages are deleted
+- [x] Works in Chrome, Firefox, Safari (IndexedDB + BlockNote compatibility)
+- [x] Toggle between light, dark, and system — UI updates immediately including sidebar, editor, kanban boards, and all shadcn components
+- [x] Refresh browser — theme persists with no flash of wrong theme
+- [x] Change OS appearance while set to "system" — app follows automatically
+- [x] BlockNote editor adapts correctly in dark mode
+- [x] `⌘+Shift+L` cycles the theme
+- [x] Create a card, add subtasks from card detail → subtasks appear in same column with parent indicator
+- [x] Move subtask to different column than parent → subtask appears in new column, parent shows updated progress (e.g., "1/2 done")
+- [x] Delete parent card → all subtasks are cascade-deleted
+- [x] Open subtask detail → shows "Parent: [title]" link, clicking navigates to parent
+- [x] Attempting to add subtask to a subtask is prevented (one level only)
+- [x] Create pages and kanban boards on device A, export → import on device B (fresh install) → all data appears
+- [x] Make edits on both devices independently, export A, import on B → newer edits from A merge in, B's newer edits preserved
+- [x] Delete a page on device A, export, import on B → page is removed on B
+- [x] Edit a page on device B, delete it on device A (before the edit), import on B → page is kept (edit wins)
+- [x] Export file is valid JSON and reasonable size
+- [x] Build passes with no lint errors
 
 ---
 
