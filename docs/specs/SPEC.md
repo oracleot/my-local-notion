@@ -129,7 +129,7 @@ Each phase is documented in a separate file for detailed task tracking:
 ### Advanced Features
 - [Phase 15 — Kanban Subtasks](phase-15-kanban-subtasks.md) ✅
 - [Phase 16 — Export/Import with Timestamp Merge](phase-16-export-import.md) ✅
-- [Phase 17 — Focus Mode & Pomodoro Timer](phase-17-focus-mode.md)
+- [Phase 17 — Focus Mode & Pomodoro Timer](phase-17-focus-mode.md) ✅
 
 ---
 
