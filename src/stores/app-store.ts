@@ -1,6 +1,44 @@
 import { create } from "zustand";
 import type { FocusSession, FocusSettings } from "@/types";
 
+// ─── Session persistence ────────────────────────────────────────────────────
+const SESSION_KEY = "focus-session";
+
+function persistSession(session: FocusSession | null) {
+  if (session) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  } else {
+    localStorage.removeItem(SESSION_KEY);
+  }
+}
+
+function loadPersistedSession(): FocusSession | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const session = JSON.parse(raw) as FocusSession;
+    // If it was running when the page closed, pause it and account for elapsed
+    if (session.isRunning) {
+      const elapsed = session.elapsedBeforePause + (Date.now() - session.startedAt) / 1000;
+      session.elapsedBeforePause = Math.min(elapsed, session.totalSeconds);
+      session.isRunning = false;
+      session.startedAt = 0;
+    }
+    return session;
+  } catch {
+    return null;
+  }
+}
+
+/** Compute remaining seconds from a session snapshot */
+export function getRemainingSeconds(session: FocusSession): number {
+  let elapsed = session.elapsedBeforePause;
+  if (session.isRunning) {
+    elapsed += (Date.now() - session.startedAt) / 1000;
+  }
+  return Math.max(0, Math.ceil(session.totalSeconds - elapsed));
+}
+
 type Theme = "light" | "dark" | "system";
 
 interface AppState {
@@ -32,7 +70,6 @@ interface AppState {
   }) => void;
   pauseSession: () => void;
   resumeSession: () => void;
-  tickSession: () => void;
   endSession: () => void;
   extendSession: (additionalSeconds: number) => void;
   loadFocusSettings: (settings: Pick<FocusSettings, "workMinutes" | "breakMinutes" | "audioEnabled">) => void;
@@ -114,7 +151,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     },
 
     // Focus mode
-    activeSession: null,
+    activeSession: loadPersistedSession(),
     focusSettings: { workMinutes: 60, breakMinutes: 10, audioEnabled: true },
 
     // Zen mode
@@ -126,54 +163,63 @@ export const useAppStore = create<AppState>()((set, get) => {
     },
 
     startSession: ({ cardId, cardTitle, boardName, pageId, timeBlockId, durationSeconds }) => {
-      set({
-        activeSession: {
-          cardId,
-          cardTitle,
-          boardName,
-          pageId,
-          timeBlockId: timeBlockId ?? null,
-          remainingSeconds: durationSeconds,
-          isRunning: true,
-        },
-      });
+      const session: FocusSession = {
+        cardId,
+        cardTitle,
+        boardName,
+        pageId,
+        timeBlockId: timeBlockId ?? null,
+        totalSeconds: durationSeconds,
+        startedAt: Date.now(),
+        elapsedBeforePause: 0,
+        isRunning: true,
+      };
+      persistSession(session);
+      set({ activeSession: session });
     },
 
     pauseSession: () => {
       const session = get().activeSession;
-      if (session) set({ activeSession: { ...session, isRunning: false } });
+      if (!session || !session.isRunning) return;
+      const elapsed = session.elapsedBeforePause + (Date.now() - session.startedAt) / 1000;
+      const updated: FocusSession = {
+        ...session,
+        elapsedBeforePause: Math.min(elapsed, session.totalSeconds),
+        isRunning: false,
+        startedAt: 0,
+      };
+      persistSession(updated);
+      set({ activeSession: updated });
     },
 
     resumeSession: () => {
       const session = get().activeSession;
-      if (session) set({ activeSession: { ...session, isRunning: true } });
-    },
-
-    tickSession: () => {
-      const session = get().activeSession;
-      if (!session || !session.isRunning) return;
-      const next = session.remainingSeconds - 1;
-      if (next <= 0) {
-        set({ activeSession: { ...session, remainingSeconds: 0, isRunning: false } });
-      } else {
-        set({ activeSession: { ...session, remainingSeconds: next } });
-      }
+      if (!session) return;
+      const updated: FocusSession = {
+        ...session,
+        startedAt: Date.now(),
+        isRunning: true,
+      };
+      persistSession(updated);
+      set({ activeSession: updated });
     },
 
     endSession: () => {
+      persistSession(null);
       set({ activeSession: null, zenMode: false });
     },
 
     extendSession: (additionalSeconds) => {
       const session = get().activeSession;
       if (session) {
-        set({
-          activeSession: {
-            ...session,
-            remainingSeconds: session.remainingSeconds + additionalSeconds,
-            isRunning: true,
-          },
-        });
+        const updated: FocusSession = {
+          ...session,
+          totalSeconds: session.totalSeconds + additionalSeconds,
+          isRunning: true,
+          startedAt: session.isRunning ? session.startedAt : Date.now(),
+        };
+        persistSession(updated);
+        set({ activeSession: updated });
       }
     },
 

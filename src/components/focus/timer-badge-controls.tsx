@@ -4,7 +4,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Pause, Play, Square, Plus, Maximize } from "lucide-react";
+import { Pause, Play, Square, Maximize } from "lucide-react";
 
 interface TimerBadgeControlsProps {
   isRunning: boolean;
@@ -12,7 +12,6 @@ interface TimerBadgeControlsProps {
   onPause: () => void;
   onResume: () => void;
   onStop: () => void;
-  onExtend: () => void;
   onZenMode: () => void;
   onDismiss: () => void;
 }
@@ -23,7 +22,6 @@ export function TimerBadgeControls({
   onPause,
   onResume,
   onStop,
-  onExtend,
   onZenMode,
   onDismiss,
 }: TimerBadgeControlsProps) {
@@ -66,22 +64,6 @@ export function TimerBadgeControls({
           )}
         </>
       )}
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => { onExtend(); onDismiss(); }}
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" className="text-xs">
-          +15 min
-        </TooltipContent>
-      </Tooltip>
 
       <Tooltip>
         <TooltipTrigger asChild>

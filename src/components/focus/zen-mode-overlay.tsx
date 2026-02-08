@@ -15,7 +15,7 @@ export function ZenModeOverlay() {
   const zenMode = useAppStore((s) => s.zenMode);
   const session = useAppStore((s) => s.activeSession);
   const toggleZenMode = useAppStore((s) => s.toggleZenMode);
-  const { pause, resume, stop, extend, isRunning, isComplete } =
+  const { pause, resume, stop, remainingSeconds, isRunning, isComplete } =
     useFocusTimer();
 
   // Escape key to exit
@@ -62,7 +62,7 @@ export function ZenModeOverlay() {
 
       {/* Timer section */}
       <ZenModeTimer
-        remainingSeconds={session.remainingSeconds}
+        remainingSeconds={remainingSeconds}
         cardTitle={session.cardTitle}
         boardName={session.boardName}
         isRunning={isRunning}
@@ -70,7 +70,6 @@ export function ZenModeOverlay() {
         onPause={pause}
         onResume={resume}
         onStop={stop}
-        onExtend={() => extend(15 * 60)}
       />
 
       {/* Journal section */}

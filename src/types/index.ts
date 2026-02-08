@@ -84,7 +84,12 @@ export interface FocusSession {
   boardName: string;
   pageId: string;
   timeBlockId: string | null;
-  remainingSeconds: number;
+  /** Total duration of the session in seconds */
+  totalSeconds: number;
+  /** Unix ms timestamp when the timer was last started/resumed */
+  startedAt: number;
+  /** Seconds already elapsed before the current run (accumulated across pauses) */
+  elapsedBeforePause: number;
   isRunning: boolean;
 }
 

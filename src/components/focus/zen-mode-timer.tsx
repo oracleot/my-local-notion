@@ -4,7 +4,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Pause, Play, Square, Plus } from "lucide-react";
+import { Pause, Play, Square } from "lucide-react";
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -21,7 +21,6 @@ interface ZenModeTimerProps {
   onPause: () => void;
   onResume: () => void;
   onStop: () => void;
-  onExtend: () => void;
 }
 
 export function ZenModeTimer({
@@ -33,7 +32,6 @@ export function ZenModeTimer({
   onPause,
   onResume,
   onStop,
-  onExtend,
 }: ZenModeTimerProps) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6">
@@ -126,22 +124,6 @@ export function ZenModeTimer({
           </TooltipTrigger>
           <TooltipContent side="bottom" className="text-xs">
             Stop
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 text-white/60 hover:bg-white/10 hover:text-white"
-              onClick={onExtend}
-            >
-              <Plus className="h-5 w-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">
-            +15 min
           </TooltipContent>
         </Tooltip>
       </div>

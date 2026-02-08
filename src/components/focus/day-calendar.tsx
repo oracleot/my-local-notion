@@ -1,9 +1,8 @@
-import { useMemo, useCallback, useState } from "react";
+import { useMemo, useCallback, useState, useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   DndContext,
   DragOverlay,
-  useDroppable,
   type DragStartEvent,
   type DragEndEvent,
   PointerSensor,
@@ -13,9 +12,11 @@ import {
 import {
   getTimeBlocksForDate,
   deleteTimeBlock,
+  markSkippedBlocks,
 } from "@/lib/focus-helpers";
 import type { TimeBlock } from "@/types";
-import { TimeBlockCard, TimeBlockCardOverlay } from "./time-block-card";
+import { TimeBlockCardOverlay } from "./time-block-card";
+import { HourSlot } from "./hour-slot";
 
 interface DayCalendarProps {
   date: string; // ISO YYYY-MM-DD
@@ -24,12 +25,7 @@ interface DayCalendarProps {
   onSlotClick: (hour: number) => void;
   onStartBlock: (block: TimeBlock) => void;
   onMoveBlock: (blockId: string, newHour: number) => void;
-}
-
-function formatHour(h: number): string {
-  const suffix = h >= 12 ? "PM" : "AM";
-  const display = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return `${display} ${suffix}`;
+  onRescheduleBlock?: (block: TimeBlock) => void;
 }
 
 export function DayCalendar({
@@ -39,19 +35,34 @@ export function DayCalendar({
   onSlotClick,
   onStartBlock,
   onMoveBlock,
+  onRescheduleBlock,
 }: DayCalendarProps) {
   const blocks = useLiveQuery(() => getTimeBlocksForDate(date), [date]);
   const [draggedBlock, setDraggedBlock] = useState<TimeBlock | null>(null);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  );
-
-  const currentHour = useMemo(() => {
+  // Reactive current hour — updates every minute alongside auto-skip
+  const [currentHour, setCurrentHour] = useState(() => {
     const now = new Date();
     const today = now.toISOString().split("T")[0];
     return today === date ? now.getHours() : -1;
+  });
+
+  // Single 60s interval: auto-skip past blocks + refresh currentHour
+  useEffect(() => {
+    function tick() {
+      markSkippedBlocks(date);
+      const now = new Date();
+      const today = now.toISOString().split("T")[0];
+      setCurrentHour(today === date ? now.getHours() : -1);
+    }
+    tick();
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
   }, [date]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
 
   const hours = useMemo(() => {
     const arr: number[] = [];
@@ -106,11 +117,13 @@ export function DayCalendar({
             key={hour}
             hour={hour}
             isCurrent={hour === currentHour}
+            isPast={currentHour !== -1 && hour < currentHour}
             block={blocksByHour.get(hour)}
             isDragOver={draggedBlock !== null}
             onSlotClick={() => onSlotClick(hour)}
             onStartBlock={onStartBlock}
             onDeleteBlock={handleDelete}
+            onRescheduleBlock={onRescheduleBlock}
           />
         ))}
       </div>
@@ -121,69 +134,5 @@ export function DayCalendar({
         ) : null}
       </DragOverlay>
     </DndContext>
-  );
-}
-
-function HourSlot({
-  hour,
-  isCurrent,
-  block,
-  isDragOver,
-  onSlotClick,
-  onStartBlock,
-  onDeleteBlock,
-}: {
-  hour: number;
-  isCurrent: boolean;
-  block: TimeBlock | undefined;
-  isDragOver: boolean;
-  onSlotClick: () => void;
-  onStartBlock: (block: TimeBlock) => void;
-  onDeleteBlock: (id: string) => void;
-}) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: `hour-${hour}`,
-    data: { hour },
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={`
-        group relative flex min-h-[56px] transition-colors
-        ${isOver ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : isCurrent ? "bg-primary/5" : isDragOver ? "bg-muted/15" : "hover:bg-muted/30"}
-      `}
-    >
-      <div
-        className={`
-          flex w-16 shrink-0 items-start justify-end pr-3 pt-2
-          text-[11px] font-medium tabular-nums
-          ${isCurrent ? "text-primary font-semibold" : "text-muted-foreground/50"}
-        `}
-      >
-        {formatHour(hour)}
-      </div>
-
-      {isCurrent && (
-        <div className="absolute left-16 top-0 h-full w-0.5 bg-primary/60" />
-      )}
-
-      <div className="flex-1 py-1.5 pl-3 pr-2">
-        {block ? (
-          <TimeBlockCard
-            block={block}
-            onStart={() => onStartBlock(block)}
-            onDelete={() => onDeleteBlock(block.id)}
-          />
-        ) : (
-          <button
-            onClick={onSlotClick}
-            className="flex h-full min-h-[40px] w-full items-center rounded-md border border-dashed border-transparent px-2 text-[12px] text-muted-foreground/30 transition-colors hover:border-border/50 hover:text-muted-foreground/60"
-          >
-            + Add task
-          </button>
-        )}
-      </div>
-    </div>
   );
 }

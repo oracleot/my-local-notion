@@ -74,17 +74,18 @@ export function TimeSlotPicker({
             {hours.map((hour) => {
               const isOccupied = occupiedHours.has(hour);
               const isCurrent = hour === currentHour;
+              const isPast = currentHour !== -1 && hour < currentHour;
 
               return (
                 <Button
                   key={hour}
                   variant={isCurrent ? "default" : "outline"}
-                  disabled={isOccupied}
+                  disabled={isOccupied || isPast}
                   onClick={() => {
                     onSelectHour(hour);
                     onOpenChange(false);
                   }}
-                  className="h-10 justify-start gap-2"
+                  className={`h-10 justify-start gap-2 ${isPast ? "opacity-40" : ""}`}
                 >
                   {isOccupied ? (
                     <Check className="h-3.5 w-3.5 text-muted-foreground/40" />

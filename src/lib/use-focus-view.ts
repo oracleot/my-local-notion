@@ -4,6 +4,7 @@ import {
   getFocusSettings,
   createTimeBlock,
   updateTimeBlock,
+  deleteTimeBlock,
   findAvailableHour,
   type EligibleCard,
 } from "@/lib/focus-helpers";
@@ -32,6 +33,7 @@ export function useFocusView() {
   const [taskPickerOpen, setTaskPickerOpen] = useState(false);
   const [pendingHour, setPendingHour] = useState<number | null>(null);
   const [pendingCard, setPendingCard] = useState<EligibleCard | null>(null);
+  const [pendingRescheduleBlock, setPendingRescheduleBlock] = useState<TimeBlock | null>(null);
   const [timeSlotPickerOpen, setTimeSlotPickerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settings, setSettings] = useState<FocusSettings | null>(null);
@@ -106,12 +108,29 @@ export function useFocusView() {
   }, []);
 
   const handleTimeSlotSelected = useCallback(async (hour: number) => {
-    if (!pendingCard || !settings) return;
+    if (!settings) return;
+
+    // If rescheduling, delete old block first
+    if (pendingRescheduleBlock) {
+      await deleteTimeBlock(pendingRescheduleBlock.id);
+      await createTimeBlock(
+        pendingRescheduleBlock.cardId,
+        pendingRescheduleBlock.pageId,
+        selectedDate,
+        hour,
+        settings.workMinutes
+      );
+      setPendingRescheduleBlock(null);
+      setTimeSlotPickerOpen(false);
+      return;
+    }
+
+    if (!pendingCard) return;
     const dur = settings.workMinutes;
     await createTimeBlock(pendingCard.card.id, pendingCard.pageId, selectedDate, hour, dur);
     setPendingCard(null);
     setTimeSlotPickerOpen(false);
-  }, [pendingCard, settings, selectedDate]);
+  }, [pendingCard, pendingRescheduleBlock, settings, selectedDate]);
 
   const handleMoveBlock = useCallback(
     async (blockId: string, newHour: number) => {
@@ -148,6 +167,12 @@ export function useFocusView() {
     setWeekStart(getMondayOfWeek(getToday()));
   }, []);
 
+  const handleRescheduleBlock = useCallback((block: TimeBlock) => {
+    setPendingRescheduleBlock(block);
+    setPendingCard(null);
+    setTimeSlotPickerOpen(true);
+  }, []);
+
   const handleScheduleFromSidebar = useCallback((ec: EligibleCard) => {
     // Open time slot picker for user to choose hour
     handleScheduleWithTimePicker(ec);
@@ -163,6 +188,7 @@ export function useFocusView() {
     timeSlotPickerOpen,
     setTimeSlotPickerOpen,
     pendingCard,
+    pendingRescheduleBlock,
     settingsOpen,
     setSettingsOpen,
     settings,
@@ -176,6 +202,7 @@ export function useFocusView() {
     handleScheduleWithTimePicker,
     handleTimeSlotSelected,
     handleScheduleFromSidebar,
+    handleRescheduleBlock,
     handleMoveBlock,
     navigateDay,
     navigateWeek,

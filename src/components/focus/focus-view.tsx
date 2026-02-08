@@ -1,11 +1,12 @@
 import { useFocusView } from "@/lib/use-focus-view";
+import { useFocusTimer } from "@/lib/use-focus-timer";
 import { DayCalendar } from "./day-calendar";
 import { WeekCalendar } from "./week-calendar";
 import { TaskPickerDialog } from "./task-picker-dialog";
 import { TimeSlotPicker } from "./time-slot-picker";
 import { FocusViewHeader } from "./focus-view-header";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { UnscheduledSidebar } from "./unscheduled-sidebar";
+
 import { SessionCompleteDialog } from "./session-complete-dialog";
 import { FocusSettingsDialog } from "./focus-settings-dialog";
 
@@ -20,6 +21,7 @@ export function FocusView() {
     timeSlotPickerOpen,
     setTimeSlotPickerOpen,
     pendingCard,
+    pendingRescheduleBlock,
     settingsOpen,
     setSettingsOpen,
     settings,
@@ -32,12 +34,15 @@ export function FocusView() {
     handleSchedule,
     handleTimeSlotSelected,
     handleScheduleFromSidebar,
+    handleRescheduleBlock,
     handleMoveBlock,
     navigateDay,
     navigateWeek,
     handleDayClickFromWeek,
     goToToday,
   } = useFocusView();
+
+  const { isComplete } = useFocusTimer();
 
   if (!settings) return null;
 
@@ -68,6 +73,7 @@ export function FocusView() {
                 onSlotClick={handleSlotClick}
                 onStartBlock={handleStartBlock}
                 onMoveBlock={handleMoveBlock}
+                onRescheduleBlock={handleRescheduleBlock}
               />
             ) : (
               <WeekCalendar
@@ -79,10 +85,6 @@ export function FocusView() {
             )}
           </div>
         </ScrollArea>
-
-        <UnscheduledSidebar
-          onSchedule={handleScheduleFromSidebar}
-        />
       </div>
 
       {/* Dialogs */}
@@ -98,11 +100,11 @@ export function FocusView() {
         date={selectedDate}
         dayStartHour={settings.dayStartHour}
         dayEndHour={settings.dayEndHour}
-        taskTitle={pendingCard?.card.title || "Select time"}
+        taskTitle={pendingRescheduleBlock ? "Reschedule task" : pendingCard?.card.title || "Select time"}
         onSelectHour={handleTimeSlotSelected}
       />
 
-      {activeSession && activeSession.remainingSeconds <= 0 && (
+      {activeSession && isComplete && (
         <SessionCompleteDialog />
       )}
 

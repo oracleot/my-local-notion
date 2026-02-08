@@ -118,7 +118,7 @@ export function WeekCalendar({
                   <div
                     key={`${date}-${hour}`}
                     className={`
-                      border-l border-border/15 px-0.5 py-0.5
+                      border-l border-border/15 px-0.5 py-0.5 overflow-hidden
                       ${isToday ? "bg-primary/3" : ""}
                     `}
                   >
@@ -143,7 +143,8 @@ function WeekBlockChip({ block }: { block: TimeBlock }) {
   return (
     <div
       className={`
-        truncate rounded-md px-1.5 py-1 text-[10px] font-medium leading-tight
+        rounded-md px-1.5 py-1 text-[10px] font-medium leading-tight
+        break-words overflow-hidden
         ${
           block.status === "completed"
             ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"

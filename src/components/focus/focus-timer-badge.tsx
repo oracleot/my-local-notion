@@ -21,7 +21,7 @@ export function FocusTimerBadge() {
   const navigate = useNavigate();
   const session = useAppStore((s) => s.activeSession);
   const toggleZenMode = useAppStore((s) => s.toggleZenMode);
-  const { pause, resume, stop, extend } = useFocusTimer();
+  const { pause, resume, stop, remainingSeconds } = useFocusTimer();
   const [showControls, setShowControls] = useState(false);
   const controlsRef = useRef<HTMLDivElement>(null);
 
@@ -64,7 +64,7 @@ export function FocusTimerBadge() {
     );
   }
 
-  const isComplete = session.remainingSeconds <= 0;
+  const isComplete = remainingSeconds <= 0;
 
   return (
     <div className="relative" ref={controlsRef}>
@@ -91,7 +91,7 @@ export function FocusTimerBadge() {
         </span>
         <span className="max-w-[120px] truncate">{session.cardTitle}</span>
         <span className="font-mono text-[12px] tabular-nums opacity-80">
-          {formatTime(session.remainingSeconds)}
+          {formatTime(remainingSeconds)}
         </span>
       </button>
 
@@ -102,7 +102,6 @@ export function FocusTimerBadge() {
           onPause={pause}
           onResume={resume}
           onStop={stop}
-          onExtend={() => extend(15 * 60)}
           onZenMode={toggleZenMode}
           onDismiss={() => setShowControls(false)}
         />

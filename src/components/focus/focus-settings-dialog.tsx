@@ -11,7 +11,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import type { FocusSettings } from "@/types";
 
 interface FocusSettingsDialogProps {
@@ -26,8 +25,6 @@ export function FocusSettingsDialog({
   onSettingsChange,
 }: FocusSettingsDialogProps) {
   const loadFocusSettings = useAppStore((s) => s.loadFocusSettings);
-  const [work, setWork] = useState(60);
-  const [brk, setBrk] = useState(10);
   const [audio, setAudio] = useState(true);
   const [dayStart, setDayStart] = useState(8);
   const [dayEnd, setDayEnd] = useState(18);
@@ -36,8 +33,6 @@ export function FocusSettingsDialog({
   useEffect(() => {
     if (!open) return;
     getFocusSettings().then((s) => {
-      setWork(s.workMinutes);
-      setBrk(s.breakMinutes);
       setAudio(s.audioEnabled);
       setDayStart(s.dayStartHour);
       setDayEnd(s.dayEndHour);
@@ -46,8 +41,8 @@ export function FocusSettingsDialog({
 
   const handleSave = async () => {
     const updated = await updateFocusSettings({
-      workMinutes: work,
-      breakMinutes: brk,
+      workMinutes: 60,
+      breakMinutes: 0,
       audioEnabled: audio,
       dayStartHour: dayStart,
       dayEndHour: dayEnd,
@@ -71,30 +66,6 @@ export function FocusSettingsDialog({
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
-          {/* Work duration */}
-          <SettingField label="Work session (minutes)">
-            <Input
-              type="number"
-              min={15}
-              max={120}
-              value={work}
-              onChange={(e) => setWork(Number(e.target.value))}
-              className="h-8 w-20 text-[13px]"
-            />
-          </SettingField>
-
-          {/* Break duration */}
-          <SettingField label="Break duration (minutes)">
-            <Input
-              type="number"
-              min={5}
-              max={30}
-              value={brk}
-              onChange={(e) => setBrk(Number(e.target.value))}
-              className="h-8 w-20 text-[13px]"
-            />
-          </SettingField>
-
           {/* Audio */}
           <SettingField label="Chime on completion">
             <button
@@ -115,25 +86,31 @@ export function FocusSettingsDialog({
 
           {/* Working hours */}
           <SettingField label="Day start hour">
-            <Input
-              type="number"
-              min={0}
-              max={23}
+            <select
               value={dayStart}
               onChange={(e) => setDayStart(Number(e.target.value))}
-              className="h-8 w-20 text-[13px]"
-            />
+              className="h-8 rounded-md border border-input bg-background px-2 text-[13px]"
+            >
+              {Array.from({ length: 24 }, (_, i) => (
+                <option key={i} value={i}>
+                  {i === 0 ? "12 AM" : i < 12 ? `${i} AM` : i === 12 ? "12 PM" : `${i - 12} PM`}
+                </option>
+              ))}
+            </select>
           </SettingField>
 
           <SettingField label="Day end hour">
-            <Input
-              type="number"
-              min={1}
-              max={24}
+            <select
               value={dayEnd}
               onChange={(e) => setDayEnd(Number(e.target.value))}
-              className="h-8 w-20 text-[13px]"
-            />
+              className="h-8 rounded-md border border-input bg-background px-2 text-[13px]"
+            >
+              {Array.from({ length: 24 }, (_, i) => i + 1).map((h) => (
+                <option key={h} value={h}>
+                  {h === 12 ? "12 PM" : h < 12 ? `${h} AM` : h === 24 ? "12 AM" : `${h - 12} PM`}
+                </option>
+              ))}
+            </select>
           </SettingField>
         </div>
 

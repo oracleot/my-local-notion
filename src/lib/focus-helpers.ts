@@ -179,3 +179,20 @@ export async function updateFocusSettings(
 export async function removeTimeBlocksForCard(cardId: string): Promise<void> {
   await db.timeBlocks.where("cardId").equals(cardId).delete();
 }
+
+/** Mark any past "scheduled" blocks as "skipped" for the given date. */
+export async function markSkippedBlocks(date: string): Promise<void> {
+  const now = new Date();
+  const today = now.toISOString().split("T")[0];
+  
+  const blocks = await db.timeBlocks.where("date").equals(date).toArray();
+  const currentHour = date === today ? now.getHours() : (date < today ? 24 : -1);
+  
+  const toSkip = blocks.filter(
+    (b) => b.status === "scheduled" && b.startHour < currentHour
+  );
+  
+  for (const b of toSkip) {
+    await db.timeBlocks.update(b.id, { status: "skipped", updatedAt: new Date() });
+  }
+}
