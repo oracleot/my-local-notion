@@ -82,10 +82,17 @@ export function useFocusTimer() {
 
   // Audio notification on completion — continuous until stopped
   useEffect(() => {
-    if (remainingSeconds <= 0 && activeSession && !chimeRef.current) {
-      if (audioEnabled) {
-        chimeRef.current = playChimeLoop();
-      }
+    const shouldChime =
+      !!activeSession && remainingSeconds <= 0 && audioEnabled;
+
+    if (!shouldChime) {
+      chimeRef.current?.stop();
+      chimeRef.current = null;
+      return;
+    }
+
+    if (!chimeRef.current) {
+      chimeRef.current = playChimeLoop();
     }
   }, [remainingSeconds, audioEnabled, activeSession]);
 
