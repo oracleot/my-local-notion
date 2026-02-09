@@ -13,6 +13,7 @@ export function useFocusTimer() {
   const resume = useAppStore((s) => s.resumeSession);
   const stop = useAppStore((s) => s.endSession);
   const start = useAppStore((s) => s.startSession);
+  const extend = useAppStore((s) => s.extendSession);
 
   const chimeRef = useRef<{ stop: () => void } | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -102,6 +103,14 @@ export function useFocusTimer() {
     stop();
   }, [stop]);
 
+  const nudgeForward = useCallback(() => {
+    extend(-30);
+  }, [extend]);
+
+  const nudgeBackward = useCallback(() => {
+    extend(30);
+  }, [extend]);
+
   const isComplete = activeSession !== null && remainingSeconds <= 0;
 
   return {
@@ -113,6 +122,8 @@ export function useFocusTimer() {
     start,
     pause,
     resume,
+    nudgeForward,
+    nudgeBackward,
     stop: stopWithChime,
   };
 }

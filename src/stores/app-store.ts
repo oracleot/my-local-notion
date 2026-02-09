@@ -211,16 +211,21 @@ export const useAppStore = create<AppState>()((set, get) => {
 
     extendSession: (additionalSeconds) => {
       const session = get().activeSession;
-      if (session) {
-        const updated: FocusSession = {
-          ...session,
-          totalSeconds: session.totalSeconds + additionalSeconds,
-          isRunning: true,
-          startedAt: session.isRunning ? session.startedAt : Date.now(),
-        };
-        persistSession(updated);
-        set({ activeSession: updated });
-      }
+      if (!session) return;
+
+      const runningElapsed = session.isRunning
+        ? (Date.now() - session.startedAt) / 1000
+        : 0;
+      const elapsed = session.elapsedBeforePause + runningElapsed;
+
+      const nextTotal = Math.max(elapsed, session.totalSeconds + additionalSeconds);
+
+      const updated: FocusSession = {
+        ...session,
+        totalSeconds: nextTotal,
+      };
+      persistSession(updated);
+      set({ activeSession: updated });
     },
 
     loadFocusSettings: (settings) => {

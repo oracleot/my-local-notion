@@ -15,8 +15,16 @@ export function ZenModeOverlay() {
   const zenMode = useAppStore((s) => s.zenMode);
   const session = useAppStore((s) => s.activeSession);
   const toggleZenMode = useAppStore((s) => s.toggleZenMode);
-  const { pause, resume, stop, remainingSeconds, isRunning, isComplete } =
-    useFocusTimer();
+  const {
+    pause,
+    resume,
+    stop,
+    remainingSeconds,
+    isRunning,
+    isComplete,
+    nudgeForward,
+    nudgeBackward,
+  } = useFocusTimer();
 
   // Escape key to exit
   const handleKeyDown = useCallback(
@@ -69,6 +77,8 @@ export function ZenModeOverlay() {
         isComplete={isComplete}
         onPause={pause}
         onResume={resume}
+        onForward={nudgeForward}
+        onBackward={nudgeBackward}
         onStop={stop}
       />
 

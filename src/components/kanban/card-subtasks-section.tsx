@@ -1,9 +1,15 @@
 import { useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { createSubtask, updateCard } from "@/lib/db-helpers";
+import { createSubtask, updateCard, moveCard } from "@/lib/db-helpers";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { KanbanCard, KanbanColumn } from "@/types";
-import { Plus, ListTodo, CheckCircle2, Circle } from "lucide-react";
+import { Plus, ListTodo, CheckCircle2, Circle, ChevronDown } from "lucide-react";
 
 interface CardSubtasksSectionProps {
   card: KanbanCard;
@@ -39,6 +45,13 @@ export function CardSubtasksSection({
     setIsAdding(false);
   }, [card, title, link]);
 
+  const handleMoveColumn = useCallback(
+    async (subtask: KanbanCard, columnId: string) => {
+      await moveCard(subtask.id, columnId, Date.now());
+    },
+    []
+  );
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -62,25 +75,52 @@ export function CardSubtasksSection({
           {subtasks.map((subtask) => {
             const isDone = subtask.columnId === doneColumnId;
             return (
-              <button
+              <div
                 key={subtask.id}
-                onClick={() => onOpenCard(subtask)}
-                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[12px] hover:bg-muted/50 transition-colors"
+                className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-[12px] hover:bg-muted/50 transition-colors"
               >
-                {isDone ? (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
-                ) : (
-                  <Circle className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
-                )}
-                <span
-                  className={`flex-1 truncate ${isDone ? "text-muted-foreground line-through" : ""}`}
+                <div className="shrink-0">
+                  {isDone ? (
+                    <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                  ) : (
+                    <Circle className="h-3.5 w-3.5 text-muted-foreground/50" />
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onOpenCard(subtask)}
+                  className="flex flex-1 items-start gap-2 text-left min-w-0"
                 >
-                  {subtask.title || "Untitled"}
-                </span>
-                <span className="text-[10px] text-muted-foreground/50 shrink-0">
-                  {getColumnName(subtask.columnId)}
-                </span>
-              </button>
+                  <span
+                    className={`flex-1 whitespace-normal break-words ${isDone ? "text-muted-foreground line-through" : ""}`}
+                  >
+                    {subtask.title || "Untitled"}
+                  </span>
+                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="h-6 gap-1 text-[10px] text-muted-foreground"
+                    >
+                      {getColumnName(subtask.columnId)}
+                      <ChevronDown className="h-3 w-3 opacity-60" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40">
+                    {sortedColumns.map((col) => (
+                      <DropdownMenuItem
+                        key={col.id}
+                        onClick={() => handleMoveColumn(subtask, col.id)}
+                        className={col.id === subtask.columnId ? "font-semibold" : undefined}
+                      >
+                        {col.title}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             );
           })}
         </div>
