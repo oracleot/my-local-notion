@@ -29,7 +29,7 @@ Implement the requested change in the current repository, making the smallest co
 
 ## Git Branching (Mandatory)
 
-Before you change any code, you MUST work on a spec branch tied to the spec file you are implementing.
+Before you change any code, you MUST get the latest changes from main first, then work on a spec branch tied to the spec file you are implementing.
 
 - Determine the spec file you are working from (ask the user if it is not explicit).
 - Checkout (or create) a branch named exactly:
@@ -42,6 +42,7 @@ Before you change any code, you MUST work on a spec branch tied to the spec file
 
 
 0. Spec Branch
+	- Checkout to main and pull the latest changes.
 	- Identify the spec file you are implementing.
 	- Checkout to `spec/<spec-file-base-name>` before doing anything else.
 	- If needed, create the branch.
