@@ -121,39 +121,43 @@ export async function deletePage(id: string): Promise<void> {
 
   await collectDescendants(id);
 
-  await db.transaction("rw", db.pages, db.kanbanCards, db.deletions, db.timeBlocks, db.sessionLogs, async () => {
-    // Get all kanban cards for these pages (to log deletions)
-    const cardsToDelete = await db.kanbanCards
-      .where("pageId")
-      .anyOf(idsToDelete)
-      .toArray();
+  await db.transaction(
+    "rw",
+    [db.pages, db.kanbanCards, db.deletions, db.timeBlocks, db.sessionLogs],
+    async () => {
+      // Get all kanban cards for these pages (to log deletions)
+      const cardsToDelete = await db.kanbanCards
+        .where("pageId")
+        .anyOf(idsToDelete)
+        .toArray();
 
-    // Log deletions for cards and clean up time blocks + session logs
-    for (const card of cardsToDelete) {
-      await logDeletion("kanbanCard", card.id);
-      await removeTimeBlocksForCard(card.id);
-      await db.sessionLogs.where("cardId").equals(card.id).delete();
+      // Log deletions for cards and clean up time blocks + session logs
+      for (const card of cardsToDelete) {
+        await logDeletion("kanbanCard", card.id);
+        await removeTimeBlocksForCard(card.id);
+        await db.sessionLogs.where("cardId").equals(card.id).delete();
+      }
+
+      // Remove time blocks for pages being deleted
+      for (const pageId of idsToDelete) {
+        await db.timeBlocks.where("pageId").equals(pageId).delete();
+      }
+
+      // Log deletions for pages
+      for (const pageId of idsToDelete) {
+        await logDeletion("page", pageId);
+      }
+
+      // Delete all kanban cards for these pages
+      await db.kanbanCards
+        .where("pageId")
+        .anyOf(idsToDelete)
+        .delete();
+
+      // Delete all pages
+      await db.pages.bulkDelete(idsToDelete);
     }
-
-    // Remove time blocks for pages being deleted
-    for (const pageId of idsToDelete) {
-      await db.timeBlocks.where("pageId").equals(pageId).delete();
-    }
-
-    // Log deletions for pages
-    for (const pageId of idsToDelete) {
-      await logDeletion("page", pageId);
-    }
-
-    // Delete all kanban cards for these pages
-    await db.kanbanCards
-      .where("pageId")
-      .anyOf(idsToDelete)
-      .delete();
-
-    // Delete all pages
-    await db.pages.bulkDelete(idsToDelete);
-  });
+  );
 }
 
 // ─── Kanban Column helpers ───────────────────────────────────────────────────

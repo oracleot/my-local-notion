@@ -33,7 +33,6 @@ export function FocusView() {
     handleStartBlock,
     handleSchedule,
     handleTimeSlotSelected,
-    handleScheduleFromSidebar,
     handleRescheduleBlock,
     handleMoveBlock,
     navigateDay,

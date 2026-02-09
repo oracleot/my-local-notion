@@ -6,7 +6,7 @@ import {
 import { useDroppable } from "@dnd-kit/core";
 import type { KanbanColumn as KanbanColumnType, KanbanCard as KanbanCardType } from "@/types";
 import { KanbanCard } from "@/components/kanban/kanban-card";
-import { createCard } from "@/lib/db-helpers";
+import { createCard, updateCard } from "@/lib/db-helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -58,7 +58,6 @@ export function KanbanColumn({
     if (!title) return;
     const card = await createCard(pageId, column.id, title);
     if (newCardLink.trim()) {
-      const { updateCard } = await import("@/lib/db-helpers");
       await updateCard(card.id, { link: newCardLink.trim() });
     }
     setNewCardTitle("");

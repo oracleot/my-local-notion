@@ -23,15 +23,19 @@ export function useFocusTimer() {
     activeSession ? getRemainingSeconds(activeSession) : 0
   );
 
+  // Sync remaining seconds when session changes while not running
+  // (paused or cleared) — derived from props, not an async side-effect
+  const pausedRemaining = activeSession && !activeSession.isRunning
+    ? getRemainingSeconds(activeSession)
+    : !activeSession ? 0 : undefined;
+
+  if (pausedRemaining !== undefined && pausedRemaining !== remainingSeconds) {
+    setRemainingSeconds(pausedRemaining);
+  }
+
   // Animation frame loop — only runs while session is running
   useEffect(() => {
-    if (!activeSession?.isRunning) {
-      // Update once for paused state
-      if (activeSession) {
-        setRemainingSeconds(getRemainingSeconds(activeSession));
-      }
-      return;
-    }
+    if (!activeSession?.isRunning) return;
 
     lastSecondRef.current = -1;
 
@@ -58,7 +62,7 @@ export function useFocusTimer() {
         rafRef.current = null;
       }
     };
-  }, [activeSession?.isRunning]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeSession?.isRunning]);
 
   // Stop chime when session ends or component unmounts
   useEffect(() => {
@@ -73,7 +77,6 @@ export function useFocusTimer() {
     if (!activeSession) {
       chimeRef.current?.stop();
       chimeRef.current = null;
-      setRemainingSeconds(0);
     }
   }, [activeSession]);
 
