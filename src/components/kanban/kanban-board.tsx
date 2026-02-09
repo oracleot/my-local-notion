@@ -57,6 +57,7 @@ export function KanbanBoard({ page }: KanbanBoardProps) {
       map.set(col.id, []);
     }
     for (const card of cards ?? []) {
+      if (card.parentId !== null) continue;
       const list = map.get(card.columnId);
       if (list) list.push(card);
     }

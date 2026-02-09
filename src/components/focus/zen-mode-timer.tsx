@@ -4,7 +4,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Pause, Play, Square } from "lucide-react";
+import { Pause, Play, Square, SkipBack, SkipForward } from "lucide-react";
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -20,6 +20,8 @@ interface ZenModeTimerProps {
   isComplete: boolean;
   onPause: () => void;
   onResume: () => void;
+  onForward: () => void;
+  onBackward: () => void;
   onStop: () => void;
 }
 
@@ -31,6 +33,8 @@ export function ZenModeTimer({
   isComplete,
   onPause,
   onResume,
+  onForward,
+  onBackward,
   onStop,
 }: ZenModeTimerProps) {
   return (
@@ -73,6 +77,22 @@ export function ZenModeTimer({
 
       {/* Controls */}
       <div className="flex items-center gap-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 text-white/60 hover:bg-white/10 hover:text-white"
+              onClick={onBackward}
+            >
+              <SkipBack className="h-5 w-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">
+            Back 30s
+          </TooltipContent>
+        </Tooltip>
+
         {!isComplete && (
           <>
             {isRunning ? (
@@ -110,6 +130,22 @@ export function ZenModeTimer({
             )}
           </>
         )}
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 text-white/60 hover:bg-white/10 hover:text-white"
+              onClick={onForward}
+            >
+              <SkipForward className="h-5 w-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">
+            Forward 30s
+          </TooltipContent>
+        </Tooltip>
 
         <Tooltip>
           <TooltipTrigger asChild>

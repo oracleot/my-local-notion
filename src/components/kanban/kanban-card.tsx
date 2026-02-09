@@ -1,12 +1,8 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { KanbanCard as KanbanCardType, KanbanColumn } from "@/types";
-import { GripVertical, ListTodo, ArrowUpRight, ExternalLink } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { GripVertical, ExternalLink } from "lucide-react";
+import { KanbanCardSubtasks } from "@/components/kanban/kanban-card-subtasks";
 
 interface KanbanCardProps {
   card: KanbanCardType;
@@ -35,17 +31,8 @@ export function KanbanCard({ card, allCards, columns, onOpen }: KanbanCardProps)
     ? allCards.filter(c => c.parentId === card.id)
     : [];
   const hasSubtasks = subtasks.length > 0;
-  
-  // Find "done" column (last column by order)
-  const sortedColumns = [...columns].sort((a, b) => a.order - b.order);
-  const doneColumnId = sortedColumns[sortedColumns.length - 1]?.id;
-  const completedSubtasks = subtasks.filter(s => s.columnId === doneColumnId).length;
 
-  // For subtask cards, get parent info
   const isSubtask = card.parentId !== null;
-  const parentCard = isSubtask 
-    ? allCards.find(c => c.id === card.parentId) 
-    : null;
 
   return (
     <div
@@ -53,7 +40,7 @@ export function KanbanCard({ card, allCards, columns, onOpen }: KanbanCardProps)
       style={style}
       className={`group/card flex items-start gap-1 rounded-lg border bg-background px-3 py-2.5 shadow-xs transition-shadow hover:shadow-sm ${
         isDragging ? "z-50 opacity-50 shadow-md" : ""
-      } ${isSubtask ? "border-primary/30 border-l-2 border-l-primary/50" : "border-border/60"}`}
+      } ${isSubtask ? "border-primary/30" : "border-border/60"}`}
       onClick={() => onOpen(card)}
       role="button"
       tabIndex={0}
@@ -76,21 +63,6 @@ export function KanbanCard({ card, allCards, columns, onOpen }: KanbanCardProps)
       </button>
 
       <div className="min-w-0 flex-1">
-        {/* Parent indicator for subtasks */}
-        {isSubtask && parentCard && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="mb-1 flex items-center gap-1 text-[10px] text-primary/70">
-                <ArrowUpRight className="h-2.5 w-2.5" />
-                <span className="truncate max-w-[140px]">{parentCard.title || "Untitled"}</span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="text-[11px]">
-              Subtask of: {parentCard.title || "Untitled"}
-            </TooltipContent>
-          </Tooltip>
-        )}
-
         <p className="text-[13px] font-medium leading-snug text-foreground/90">
           {card.title || "Untitled"}
         </p>
@@ -114,14 +86,11 @@ export function KanbanCard({ card, allCards, columns, onOpen }: KanbanCardProps)
           </a>
         )}
 
-        {/* Subtask progress badge for parent cards */}
-        {hasSubtasks && (
-          <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground/70">
-            <ListTodo className="h-3 w-3" />
-            <span>
-              {completedSubtasks}/{subtasks.length} done
-            </span>
-          </div>
+        {!isSubtask && hasSubtasks && (
+          <KanbanCardSubtasks
+            subtasks={subtasks}
+            columns={columns}
+          />
         )}
       </div>
     </div>

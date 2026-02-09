@@ -5,6 +5,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { useAppStore } from "@/stores/app-store";
 import { PageHeader } from "@/components/editor/page-header";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
+import { SubResources } from "@/components/shared/sub-resources";
 import { KanbanBoard } from "@/components/kanban/kanban-board";
 
 // Lazy-load the BlockNote editor so the ~1.5 MB chunk is only fetched on demand
@@ -69,6 +70,7 @@ export function PageView() {
         <div className="max-w-3xl shrink-0 px-10">
           <Breadcrumbs page={page} />
           <PageHeader key={page.id} page={page} />
+          <SubResources parentId={page.id} />
         </div>
         <div className="min-h-0 flex-1">
           <KanbanBoard page={page} />
@@ -82,6 +84,7 @@ export function PageView() {
     <div className="mx-auto max-w-5xl px-4 pt-16 pb-24">
       <Breadcrumbs page={page} />
       <PageHeader key={page.id} page={page} />
+      <SubResources parentId={page.id} />
       {/* key forces remount when switching pages (BlockNote is uncontrolled) */}
       <Suspense
         fallback={
