@@ -116,7 +116,6 @@ export function TaskPickerDialog({
                       eligibleCard={ec}
                       onSchedule={() => {
                         onSchedule(ec);
-                        onOpenChange(false);
                       }}
                     />
                   ))}

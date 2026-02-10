@@ -38,6 +38,7 @@ export function FocusView() {
     setDurationPickerOpen,
     pendingDuration,
     pendingBreak,
+    pendingRescheduleDuration,
     handleSlotClick,
     handleAddBreak,
     handleCreateAndSchedule,
@@ -126,10 +127,10 @@ export function FocusView() {
       <DurationPickerDialog
         open={durationPickerOpen}
         onOpenChange={setDurationPickerOpen}
-        taskTitle={pendingBreak ? "Break" : (pendingDuration?.card.card.title || "Select duration")}
-        availableCapacity={pendingBreak?.capacity ?? pendingDuration?.capacity ?? 60}
+        taskTitle={pendingBreak ? "Break" : (pendingRescheduleDuration ? "Reschedule task" : (pendingDuration?.card.card.title || "Select duration"))}
+        availableCapacity={pendingBreak?.capacity ?? pendingRescheduleDuration?.capacity ?? pendingDuration?.capacity ?? 60}
         presets={settings.durationPresets}
-        isCurrentHour={pendingBreak?.isCurrentHour ?? pendingDuration?.isCurrentHour ?? false}
+        isCurrentHour={pendingBreak?.isCurrentHour ?? pendingRescheduleDuration?.isCurrentHour ?? pendingDuration?.isCurrentHour ?? false}
         onSelectDuration={handleDurationSelected}
       />
 

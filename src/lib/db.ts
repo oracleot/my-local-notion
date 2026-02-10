@@ -73,4 +73,36 @@ db.version(6).stores({
   sessionLogs: "id, cardId",
 });
 
+// Add order field to timeBlocks for intra-hour ordering
+db.version(7).stores({
+  pages: "id, parentId, updatedAt",
+  kanbanCards: "id, pageId, columnId, parentId",
+  deletions: "id, [entityType+entityId]",
+  timeBlocks: "id, cardId, pageId, date",
+  focusSettings: "id",
+  sessionLogs: "id, cardId",
+}).upgrade(tx => {
+  return tx.table("timeBlocks").toCollection().modify((block) => {
+    if (block.order === undefined) {
+      block.order = 0;
+    }
+  });
+});
+
+// Add startMinute field to timeBlocks for current-hour time positioning
+db.version(8).stores({
+  pages: "id, parentId, updatedAt",
+  kanbanCards: "id, pageId, columnId, parentId",
+  deletions: "id, [entityType+entityId]",
+  timeBlocks: "id, cardId, pageId, date",
+  focusSettings: "id",
+  sessionLogs: "id, cardId",
+}).upgrade(tx => {
+  return tx.table("timeBlocks").toCollection().modify((block) => {
+    if (block.startMinute === undefined) {
+      block.startMinute = 0;
+    }
+  });
+});
+
 export { db };

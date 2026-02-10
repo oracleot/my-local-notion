@@ -1,4 +1,5 @@
 import { useDroppable } from "@dnd-kit/core";
+import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import type { TimeBlock } from "@/types";
 import { TimeBlockCard } from "./time-block-card";
 
@@ -6,6 +7,19 @@ function formatHour(h: number): string {
   const suffix = h >= 12 ? "PM" : "AM";
   const display = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return `${display} ${suffix}`;
+}
+
+/** Compute which block's time window contains the current minute */
+function getActiveBlockId(blocks: TimeBlock[], currentMinute: number): string | null {
+  let offset = 0;
+  for (const b of blocks) {
+    const end = offset + b.durationMinutes;
+    if (currentMinute >= offset && currentMinute < end && b.status === "scheduled") {
+      return b.id;
+    }
+    offset = end;
+  }
+  return null;
 }
 
 interface HourSlotProps {
@@ -53,6 +67,15 @@ export function HourSlot({
   const isFull = remainingCapacity === 0;
   const elapsedPercent = isCurrent ? (currentMinute / 60) * 100 : 0;
 
+  // Sort blocks by order for horizontal rendering
+  const sortedBlocks = [...blocks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const blockIds = sortedBlocks.map((b) => b.id);
+  const activeBlockId = isCurrent ? getActiveBlockId(sortedBlocks, currentMinute) : null;
+
+  // Elapsed-time spacer: if the first block starts after minute 0, show a gap
+  const firstBlockStartMinute = sortedBlocks.length > 0 ? (sortedBlocks[0].startMinute ?? 0) : 0;
+  const spacerPercent = (firstBlockStartMinute / 60) * 100;
+
   return (
     <div
       ref={setNodeRef}
@@ -62,7 +85,6 @@ export function HourSlot({
         ${isOver && canAcceptDrop && !isPast ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : isCurrent ? "bg-primary/5" : isDragOver && canAcceptDrop && !isPast ? "bg-muted/15" : isPast ? "" : "hover:bg-muted/30"}
       `}
     >
-      {/* Time progress indicator for current hour */}
       {isCurrent && (
         <div
           className="absolute inset-0 bg-primary/[0.03] pointer-events-none"
@@ -87,20 +109,30 @@ export function HourSlot({
       <div className="flex-1 py-1.5 pl-3 pr-2">
         {hasBlocks ? (
           <div className="space-y-1.5">
-            {blocks.map((block) => (
-              <TimeBlockCard
-                key={block.id}
-                block={block}
-                onStart={() => onStartBlock(block)}
-                onDelete={() => onDeleteBlock(block.id)}
-                onReschedule={
-                  onRescheduleBlock ? () => onRescheduleBlock(block) : undefined
-                }
-                isPast={isPast}
-                compact={block.durationMinutes < 30}
-              />
-            ))}
-            {/* Show add button if there's remaining capacity */}
+            <SortableContext items={blockIds} strategy={horizontalListSortingStrategy}>
+              <div className="flex flex-row gap-1">
+                {spacerPercent > 0 && (
+                  <div
+                    className="shrink-0"
+                    style={{ width: `${spacerPercent}%` }}
+                  />
+                )}
+                {sortedBlocks.map((block) => (
+                  <TimeBlockCard
+                    key={block.id}
+                    block={block}
+                    onStart={() => onStartBlock(block)}
+                    onDelete={() => onDeleteBlock(block.id)}
+                    onReschedule={
+                      onRescheduleBlock ? () => onRescheduleBlock(block) : undefined
+                    }
+                    isPast={isPast}
+                    compact={block.durationMinutes < 30}
+                    isActiveBlock={activeBlockId === block.id}
+                  />
+                ))}
+              </div>
+            </SortableContext>
             {!isPast && !isFull && (
               <div className="flex gap-1.5">
                 <button
