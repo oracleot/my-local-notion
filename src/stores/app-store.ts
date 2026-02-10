@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { FocusSession, FocusSettings } from "@/types";
+import type { FocusSession, FocusSettings, PageType } from "@/types";
 
 // ─── Session persistence ────────────────────────────────────────────────────
 const SESSION_KEY = "focus-session";
@@ -46,7 +46,8 @@ interface AppState {
 
   // Active page
   activePageId: string | null;
-  setActivePage: (id: string | null) => void;
+  activePageType: PageType | null;
+  setActivePage: (id: string | null, type?: PageType | null) => void;
 
   // Theme
   theme: Theme;
@@ -129,7 +130,8 @@ export const useAppStore = create<AppState>()((set, get) => {
     setSidebarWidth: (width) => set({ sidebarWidth: width }),
 
     activePageId: null,
-    setActivePage: (id) => set({ activePageId: id }),
+    activePageType: null,
+    setActivePage: (id, type) => set({ activePageId: id, activePageType: type ?? null }),
 
     theme: initialTheme,
     setTheme: (theme) => {
