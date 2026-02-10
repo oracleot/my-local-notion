@@ -63,8 +63,10 @@ export interface TimeBlock {
   pageId: string;
   date: string; // ISO date YYYY-MM-DD
   startHour: number; // 0-23
+  startMinute: number; // Minute offset within the hour (0-59), used for current-hour positioning
   durationMinutes: number; // default 60
   status: TimeBlockStatus;
+  order: number; // Position within the hour slot (0-based)
   createdAt: Date;
   updatedAt: Date;
 }

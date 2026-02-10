@@ -8,12 +8,15 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  closestCenter,
 } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
 import {
   getTimeBlocksForDate,
   deleteTimeBlock,
   markSkippedBlocks,
   getRemainingCapacity,
+  reorderBlocksInHour,
 } from "@/lib/focus-helpers";
 import type { TimeBlock } from "@/types";
 import { TimeBlockCardOverlay } from "./time-block-card";
@@ -125,22 +128,44 @@ export function DayCalendar({
       const { active, over } = event;
       if (!over || !droppedBlock) return;
       const blockId = active.id as string;
+      const overId = over.id as string;
+
+      // Check if dropped on an hour slot (cross-hour move)
       const targetHour = over.data.current?.hour as number | undefined;
-      if (targetHour === undefined) return;
-      if (droppedBlock.startHour === targetHour) return;
 
-      // Verify capacity at target (account for the block being temporarily removed from source)
-      const capacity = await getRemainingCapacity(date, targetHour);
-      if (droppedBlock.durationMinutes > capacity) return;
+      if (targetHour !== undefined) {
+        // Cross-hour move: dropped on a different hour droppable
+        if (droppedBlock.startHour === targetHour) return;
+        const capacity = await getRemainingCapacity(date, targetHour);
+        if (droppedBlock.durationMinutes > capacity) return;
+        onMoveBlock(blockId, targetHour);
+        return;
+      }
 
-      onMoveBlock(blockId, targetHour);
+      // Intra-hour reorder: dropped on another block within the same hour
+      const overBlock = (blocks ?? []).find((b) => b.id === overId);
+      if (!overBlock || overBlock.startHour !== droppedBlock.startHour) return;
+      if (blockId === overId) return;
+
+      const hour = droppedBlock.startHour;
+      const hourBlocks = [...(blocksByHour.get(hour) ?? [])].sort(
+        (a, b) => (a.order ?? 0) - (b.order ?? 0)
+      );
+      const ids = hourBlocks.map((b) => b.id);
+      const oldIndex = ids.indexOf(blockId);
+      const newIndex = ids.indexOf(overId);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const reordered = arrayMove(ids, oldIndex, newIndex);
+      await reorderBlocksInHour(reordered);
     },
-    [draggedBlock, onMoveBlock, date]
+    [draggedBlock, onMoveBlock, date, blocks, blocksByHour]
   );
 
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >

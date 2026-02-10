@@ -88,12 +88,19 @@ export async function getRemainingCapacity(date: string, hour: number): Promise<
 export async function createTimeBlock(cardId: string, pageId: string, date: string, startHour: number, durationMinutes = 60): Promise<TimeBlock> {
   const capacity = await getRemainingCapacity(date, startHour);
   if (durationMinutes > capacity) throw new Error(`Duration (${durationMinutes}m) exceeds capacity (${capacity}m)`);
-  const block: TimeBlock = { id: crypto.randomUUID(), cardId, pageId, date, startHour, durationMinutes, status: "scheduled", createdAt: new Date(), updatedAt: new Date() };
+  // Calculate order: append to end of existing blocks in this slot
+  const existing = (await db.timeBlocks.where("date").equals(date).toArray()).filter(b => b.startHour === startHour);
+  const maxOrder = existing.length > 0 ? Math.max(...existing.map(b => b.order ?? 0)) : -1;
+  // For the current hour with no existing blocks, start at the current minute
+  const now = new Date();
+  const isCurrentHour = date === now.toISOString().split("T")[0] && startHour === now.getHours();
+  const startMinute = isCurrentHour && existing.length === 0 ? now.getMinutes() : 0;
+  const block: TimeBlock = { id: crypto.randomUUID(), cardId, pageId, date, startHour, startMinute, durationMinutes, status: "scheduled", order: maxOrder + 1, createdAt: new Date(), updatedAt: new Date() };
   await db.timeBlocks.add(block);
   return block;
 }
 
-export async function updateTimeBlock(id: string, updates: Partial<Pick<TimeBlock, "startHour" | "date" | "durationMinutes" | "status">>): Promise<void> {
+export async function updateTimeBlock(id: string, updates: Partial<Pick<TimeBlock, "startHour" | "startMinute" | "date" | "durationMinutes" | "status" | "order">>): Promise<void> {
   await db.timeBlocks.update(id, { ...updates, updatedAt: new Date() });
 }
 
@@ -147,13 +154,50 @@ export async function removeTimeBlocksForCard(cardId: string): Promise<void> {
   await db.timeBlocks.where("cardId").equals(cardId).delete();
 }
 
+// ─── Block reordering ───────────────────────────────────────────────────────
+export async function reorderBlocksInHour(orderedIds: string[]): Promise<void> {
+  const now = new Date();
+  for (let i = 0; i < orderedIds.length; i++) {
+    await db.timeBlocks.update(orderedIds[i], { order: i, updatedAt: now });
+  }
+}
+
+// ─── position-aware skip logic ──────────────────────────────────────────────
 export async function markSkippedBlocks(date: string): Promise<void> {
   const now = new Date();
   const today = now.toISOString().split("T")[0];
   const blocks = await db.timeBlocks.where("date").equals(date).toArray();
   const currentHour = date === today ? now.getHours() : (date < today ? 24 : -1);
-  const toSkip = blocks.filter((b) => b.status === "scheduled" && b.startHour < currentHour);
-  for (const b of toSkip) {
-    await db.timeBlocks.update(b.id, { status: "skipped", updatedAt: new Date() });
+  const currentMinute = now.getMinutes();
+
+  // Group blocks by hour for position-aware skipping
+  const byHour = new Map<number, TimeBlock[]>();
+  for (const b of blocks) {
+    const arr = byHour.get(b.startHour) ?? [];
+    arr.push(b);
+    byHour.set(b.startHour, arr);
+  }
+
+  for (const [hour, hourBlocks] of byHour) {
+    const sorted = [...hourBlocks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+    if (hour < currentHour) {
+      // Entire hour is past — skip all scheduled blocks
+      for (const b of sorted) {
+        if (b.status === "scheduled") {
+          await db.timeBlocks.update(b.id, { status: "skipped", updatedAt: new Date() });
+        }
+      }
+    } else if (hour === currentHour && date === today) {
+      // Current hour — position-aware: skip blocks whose effective window has elapsed
+      let offset = 0;
+      for (const b of sorted) {
+        const blockEnd = offset + b.durationMinutes;
+        if (b.status === "scheduled" && blockEnd <= currentMinute) {
+          await db.timeBlocks.update(b.id, { status: "skipped", updatedAt: new Date() });
+        }
+        offset = blockEnd;
+      }
+    }
   }
 }
