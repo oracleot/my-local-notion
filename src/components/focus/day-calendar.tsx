@@ -13,6 +13,7 @@ import {
   getTimeBlocksForDate,
   deleteTimeBlock,
   markSkippedBlocks,
+  getRemainingCapacity,
 } from "@/lib/focus-helpers";
 import type { TimeBlock } from "@/types";
 import { TimeBlockCardOverlay } from "./time-block-card";
@@ -40,20 +41,22 @@ export function DayCalendar({
   const blocks = useLiveQuery(() => getTimeBlocksForDate(date), [date]);
   const [draggedBlock, setDraggedBlock] = useState<TimeBlock | null>(null);
 
-  // Reactive current hour — updates every minute alongside auto-skip
+  // Reactive current hour and minute — updates every minute alongside auto-skip
   const [currentHour, setCurrentHour] = useState(() => {
     const now = new Date();
     const today = now.toISOString().split("T")[0];
     return today === date ? now.getHours() : -1;
   });
+  const [currentMinute, setCurrentMinute] = useState(() => new Date().getMinutes());
 
-  // Single 60s interval: auto-skip past blocks + refresh currentHour
+  // Single 60s interval: auto-skip past blocks + refresh currentHour/currentMinute
   useEffect(() => {
     function tick() {
       markSkippedBlocks(date);
       const now = new Date();
       const today = now.toISOString().split("T")[0];
       setCurrentHour(today === date ? now.getHours() : -1);
+      setCurrentMinute(now.getMinutes());
     }
     tick();
     const id = setInterval(tick, 60_000);
@@ -70,11 +73,35 @@ export function DayCalendar({
     return arr;
   }, [dayStartHour, dayEndHour]);
 
+  // Group blocks by hour (1:many)
   const blocksByHour = useMemo(() => {
-    const map = new Map<number, TimeBlock>();
-    for (const b of blocks ?? []) map.set(b.startHour, b);
+    const map = new Map<number, TimeBlock[]>();
+    for (let h = dayStartHour; h < dayEndHour; h++) {
+      map.set(h, []);
+    }
+    for (const b of blocks ?? []) {
+      const hourBlocks = map.get(b.startHour) ?? [];
+      hourBlocks.push(b);
+      map.set(b.startHour, hourBlocks);
+    }
     return map;
-  }, [blocks]);
+  }, [blocks, dayStartHour, dayEndHour]);
+
+  // Calculate remaining capacity per hour
+  const capacityByHour = useMemo(() => {
+    const map = new Map<number, number>();
+    const today = new Date().toISOString().split("T")[0];
+    const isToday = date === today;
+
+    for (let h = dayStartHour; h < dayEndHour; h++) {
+      const hourBlocks = blocksByHour.get(h) ?? [];
+      const usedMinutes = hourBlocks.reduce((sum, b) => sum + b.durationMinutes, 0);
+      // Base capacity: (60 - elapsed) for current hour, 60 for future hours
+      const baseCapacity = (isToday && h === currentHour) ? 60 - currentMinute : 60;
+      map.set(h, Math.max(0, baseCapacity - usedMinutes));
+    }
+    return map;
+  }, [blocksByHour, date, currentHour, currentMinute, dayStartHour, dayEndHour]);
 
   const handleDelete = useCallback(async (blockId: string) => {
     await deleteTimeBlock(blockId);
@@ -90,19 +117,23 @@ export function DayCalendar({
   );
 
   const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
+    async (event: DragEndEvent) => {
+      const droppedBlock = draggedBlock;
       setDraggedBlock(null);
       const { active, over } = event;
-      if (!over) return;
+      if (!over || !droppedBlock) return;
       const blockId = active.id as string;
       const targetHour = over.data.current?.hour as number | undefined;
       if (targetHour === undefined) return;
-      const block = (blocks ?? []).find((b) => b.id === blockId);
-      if (block && block.startHour !== targetHour) {
-        onMoveBlock(blockId, targetHour);
-      }
+      if (droppedBlock.startHour === targetHour) return;
+
+      // Verify capacity at target (account for the block being temporarily removed from source)
+      const capacity = await getRemainingCapacity(date, targetHour);
+      if (droppedBlock.durationMinutes > capacity) return;
+
+      onMoveBlock(blockId, targetHour);
     },
-    [blocks, onMoveBlock]
+    [draggedBlock, onMoveBlock, date]
   );
 
   return (
@@ -118,8 +149,11 @@ export function DayCalendar({
             hour={hour}
             isCurrent={hour === currentHour}
             isPast={currentHour !== -1 && hour < currentHour}
-            block={blocksByHour.get(hour)}
+            blocks={blocksByHour.get(hour) ?? []}
+            remainingCapacity={capacityByHour.get(hour) ?? 60}
+            currentMinute={hour === currentHour ? currentMinute : 0}
             isDragOver={draggedBlock !== null}
+            draggedBlockDuration={draggedBlock?.durationMinutes}
             onSlotClick={() => onSlotClick(hour)}
             onStartBlock={onStartBlock}
             onDeleteBlock={handleDelete}

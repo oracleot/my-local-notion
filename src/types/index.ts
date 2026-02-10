@@ -76,6 +76,7 @@ export interface FocusSettings {
   audioEnabled: boolean; // default true
   dayStartHour: number; // default 8
   dayEndHour: number; // default 18
+  durationPresets: number[]; // default [25, 40, 60]
 }
 
 export interface FocusSession {
