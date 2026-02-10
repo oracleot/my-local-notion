@@ -29,6 +29,7 @@ export function useUnstartedTaskReminders() {
       try {
         const settings = await getFocusSettings();
         const reminderInterval = settings.reminderIntervalMinutes ?? 5;
+        const audioEnabled = settings.audioEnabled ?? true;
         
         // If reminders disabled (0), skip
         if (reminderInterval === 0) return;
@@ -65,7 +66,7 @@ export function useUnstartedTaskReminders() {
           if (!card || !page) continue;
 
           // Show reminder toast
-          showReminderToast(block, card, page.title || "Untitled Board", startSession);
+          showReminderToast(block, card, page.title || "Untitled Board", startSession, audioEnabled);
           
           // Update last notification time
           lastNotifiedAt.current.set(block.id, Date.now());
@@ -99,8 +100,14 @@ function showReminderToast(
     pageId: string;
     timeBlockId?: string | null;
     durationSeconds: number;
-  }) => void
+  }) => void,
+  audioEnabled: boolean
 ) {
+  // Play chime sound if audio is enabled
+  if (audioEnabled) {
+    playReminderChime();
+  }
+
   const formatHour = (hour: number) => {
     if (hour === 0) return "12 AM";
     if (hour < 12) return `${hour} AM`;
@@ -145,4 +152,38 @@ function showReminderToast(
       },
     }
   );
+}
+
+// ─── Audio ──────────────────────────────────────────────────────────────────
+
+/**
+ * Play a single reminder chime sound (not looping)
+ */
+function playReminderChime() {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+    osc.frequency.setValueAtTime(1318.5, ctx.currentTime + 0.15); // E6
+    osc.frequency.setValueAtTime(1760, ctx.currentTime + 0.3); // A6
+
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
+
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.8);
+
+    // Clean up after playing
+    osc.onended = () => {
+      ctx.close().catch(() => {});
+    };
+  } catch {
+    // Silently fail if AudioContext is unavailable
+  }
 }

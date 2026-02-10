@@ -169,12 +169,12 @@ Break blocks export as normal `TimeBlock` rows (with `cardId: "__break__"`). On 
 - Coordinated changes across hour-slot → day-calendar → focus-view → use-focus-view pipeline.
 - No store changes, no type changes, no export/import changes.
 
-## Open Questions / Assumptions
+## Resolved Questions
 
-1. **Break stats**: Should break minutes be **included** or **excluded** from the focus header stats ("X tasks, Ym scheduled")? Assumption: **excluded** — they're rest, not work.
+1. **Break stats**: Break minutes are **included** in the focus header stats — serves as a visual indicator that something is scheduled.
 
-2. **Break visual style**: Dashed border + coffee icon + a neutral/warm accent color (e.g. `bg-orange-500/5`). Any preference on color/icon?
+2. **Break visual style**: Dashed border + coffee icon + warm neutral accent color (e.g. `bg-orange-500/5`). ✅ Confirmed.
 
-3. **Board selector default**: When creating a new task from the calendar, should the board selector default to the **currently active board** (the one whose kanban view triggered focus mode)? Assumption: **yes**.
+3. **Board selector default**: Defaults to the **currently active board**, but user can choose a different board from the dropdown. ✅ Confirmed.
 
-4. **Column placement**: New tasks go into the board's first column (lowest `order`). Should this always be the case, or should the user pick a column? Assumption: **always first column** ("To Do") to keep the flow fast.
+4. **Column placement**: New tasks go into the board's first column (lowest `order` — typically "To Do") to keep the flow fast.

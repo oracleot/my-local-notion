@@ -1,10 +1,11 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useDraggable } from "@dnd-kit/core";
 import { db } from "@/lib/db";
+import { isBreakBlock } from "@/lib/focus-helpers";
 import { useAppStore } from "@/stores/app-store";
 import type { TimeBlock } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Play, Trash2, GripVertical, RefreshCw } from "lucide-react";
+import { Play, Trash2, GripVertical, RefreshCw, Coffee } from "lucide-react";
 
 interface TimeBlockCardProps {
   block: TimeBlock;
@@ -16,17 +17,18 @@ interface TimeBlockCardProps {
 }
 
 export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast, compact }: TimeBlockCardProps) {
+  const isBreak = isBreakBlock(block);
   const card = useLiveQuery(
-    () => db.kanbanCards.get(block.cardId),
-    [block.cardId]
+    () => (isBreak ? undefined : db.kanbanCards.get(block.cardId)),
+    [block.cardId, isBreak]
   );
   const page = useLiveQuery(
-    () => db.pages.get(block.pageId),
-    [block.pageId]
+    () => (isBreak ? undefined : db.pages.get(block.pageId)),
+    [block.pageId, isBreak]
   );
   const activeSession = useAppStore((s) => s.activeSession);
-  const isActive = activeSession?.cardId === block.cardId;
-  const isThisBlockRunning = activeSession?.timeBlockId === block.id;
+  const isActive = !isBreak && activeSession?.cardId === block.cardId;
+  const isThisBlockRunning = !isBreak && activeSession?.timeBlockId === block.id;
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: block.id,
@@ -41,7 +43,9 @@ export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast, 
         ${compact ? "px-2 py-1" : "px-2.5 py-2"}
         ${isDragging ? "opacity-30" : ""}
         ${
-          block.status === "completed"
+          isBreak
+            ? "border-dashed border-orange-400/30 bg-orange-500/5 text-orange-700 dark:text-orange-400"
+            : block.status === "completed"
             ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400"
             : block.status === "skipped"
               ? "border-amber-500/20 bg-amber-500/5 text-amber-700 dark:text-amber-400"
@@ -61,18 +65,27 @@ export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast, 
 
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13px] font-medium">
-          {card?.title || "Loading..."}
+          {isBreak ? "Break" : (card?.title || "Loading...")}
         </p>
         <div className="flex items-center gap-1.5">
-          {page && (
-            <p className="truncate text-[10px] text-muted-foreground/60">
-              {page.title || "Untitled Board"}
-            </p>
-          )}
-          {block.status === "skipped" && (
-            <span className="shrink-0 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-medium text-amber-600 dark:text-amber-400">
-              Missed
-            </span>
+          {isBreak ? (
+            <div className="flex items-center gap-1 text-[10px] text-orange-600/60 dark:text-orange-400/60">
+              <Coffee className="h-2.5 w-2.5" />
+              <span>Rest time</span>
+            </div>
+          ) : (
+            <>
+              {page && (
+                <p className="truncate text-[10px] text-muted-foreground/60">
+                  {page.title || "Untitled Board"}
+                </p>
+              )}
+              {block.status === "skipped" && (
+                <span className="shrink-0 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-medium text-amber-600 dark:text-amber-400">
+                  Missed
+                </span>
+              )}
+            </>
           )}
         </div>
       </div>

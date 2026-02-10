@@ -1,6 +1,29 @@
 import { db } from "@/lib/db";
 import type { Page, KanbanCard, TimeBlock, FocusSettings } from "@/types";
 
+// ─── Break block constants ──────────────────────────────────────────────────
+export const BREAK_CARD_ID = "__break__";
+export const BREAK_PAGE_ID = "__break__";
+
+export function isBreakBlock(block: TimeBlock): boolean {
+  return block.cardId === BREAK_CARD_ID;
+}
+
+export async function createBreakBlock(date: string, startHour: number, durationMinutes: number): Promise<TimeBlock> {
+  return createTimeBlock(BREAK_CARD_ID, BREAK_PAGE_ID, date, startHour, durationMinutes);
+}
+
+// ─── Board helpers ──────────────────────────────────────────────────────────
+export function getFirstColumn(page: Page): { id: string; title: string } | null {
+  if (page.columns.length === 0) return null;
+  const sorted = [...page.columns].sort((a, b) => a.order - b.order);
+  return { id: sorted[0].id, title: sorted[0].title };
+}
+
+export async function getKanbanBoards(): Promise<Page[]> {
+  return db.pages.filter((p) => p.pageType === "kanban" && p.columns.length > 0).toArray();
+}
+
 // ─── Done column detection ──────────────────────────────────────────────────
 export function getDoneColumnId(page: Page): string | null {
   if (page.doneColumnId) return page.doneColumnId;
