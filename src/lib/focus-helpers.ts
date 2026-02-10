@@ -56,12 +56,10 @@ export async function getTimeBlocksForWeek(weekStartDate: string): Promise<TimeB
 export async function getRemainingCapacity(date: string, hour: number): Promise<number> {
   const blocks = (await db.timeBlocks.where("date").equals(date).toArray()).filter((b) => b.startHour === hour);
   const usedMinutes = blocks.reduce((sum, b) => sum + b.durationMinutes, 0);
-  let baseCapacity = 60 - usedMinutes;
   const now = new Date();
-  if (date === now.toISOString().split("T")[0] && hour === now.getHours()) {
-    baseCapacity = Math.min(baseCapacity, 60 - now.getMinutes());
-  }
-  return Math.max(0, baseCapacity);
+  const isCurrentHour = date === now.toISOString().split("T")[0] && hour === now.getHours();
+  const baseCapacity = isCurrentHour ? 60 - now.getMinutes() : 60;
+  return Math.max(0, baseCapacity - usedMinutes);
 }
 
 export async function createTimeBlock(cardId: string, pageId: string, date: string, startHour: number, durationMinutes = 60): Promise<TimeBlock> {
@@ -90,9 +88,8 @@ export async function findAvailableHour(date: string, dayStartHour: number, dayE
 
   const getCapacity = (h: number) => {
     const used = blocks.filter((b) => b.startHour === h).reduce((s, b) => s + b.durationMinutes, 0);
-    let rem = 60 - used;
-    if (h === currentHour) rem = Math.min(rem, 60 - currentMinute);
-    return Math.max(0, rem);
+    const baseCapacity = h === currentHour ? 60 - currentMinute : 60;
+    return Math.max(0, baseCapacity - used);
   };
 
   if (isToday && currentHour >= dayStartHour && currentHour < dayEndHour && getCapacity(currentHour) >= minCapacity) {
