@@ -53,14 +53,9 @@ export function TimeSlotPicker({
     for (let h = dayStartHour; h < dayEndHour; h++) {
       const hourBlocks = (blocks ?? []).filter((b) => b.startHour === h);
       const usedMinutes = hourBlocks.reduce((sum, b) => sum + b.durationMinutes, 0);
-      let remaining = 60 - usedMinutes;
-
-      // For current hour, cap by elapsed time
-      if (h === currentHour) {
-        remaining = Math.min(remaining, 60 - currentMinute);
-      }
-
-      map.set(h, Math.max(0, remaining));
+      // Base capacity: (60 - elapsed) for current hour, 60 for future hours
+      const baseCapacity = h === currentHour ? 60 - currentMinute : 60;
+      map.set(h, Math.max(0, baseCapacity - usedMinutes));
     }
     return map;
   }, [blocks, date, dayStartHour, dayEndHour]);
