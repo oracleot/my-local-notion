@@ -27,9 +27,11 @@ export function PageView() {
 
   // Keep Zustand activePageId in sync & update document title
   useEffect(() => {
-    if (pageId) setActivePage(pageId);
-    return () => setActivePage(null);
-  }, [pageId, setActivePage]);
+    if (pageId && page) {
+      setActivePage(pageId, page.pageType);
+    }
+    return () => setActivePage(null, null);
+  }, [pageId, page, setActivePage]);
 
   useEffect(() => {
     if (page?.title) {

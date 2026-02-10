@@ -35,6 +35,7 @@ import type { PageType } from "@/types";
 export function Sidebar() {
   const navigate = useNavigate();
   const { toggleSidebar } = useAppStore();
+  const activePageType = useAppStore((s) => s.activePageType);
   const [dataTransferOpen, setDataTransferOpen] = useState(false);
 
   const rootPages = useLiveQuery(() =>
@@ -94,15 +95,17 @@ export function Sidebar() {
           <kbd className="ml-auto font-mono text-[10px] opacity-40">⌘K</kbd>
         </Button>
 
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-2.5 h-7 px-2 text-[13px] text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent font-normal"
-          onClick={() => navigate("/focus")}
-        >
-          <Target className="h-3.5 w-3.5 opacity-60" />
-          Focus
-          <kbd className="ml-auto font-mono text-[10px] opacity-40">⌘⇧F</kbd>
-        </Button>
+        {activePageType === "kanban" && (
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-2.5 h-7 px-2 text-[13px] text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent font-normal"
+            onClick={() => navigate("/focus")}
+          >
+            <Target className="h-3.5 w-3.5 opacity-60" />
+            Focus
+            <kbd className="ml-auto font-mono text-[10px] opacity-40">⌘⇧F</kbd>
+          </Button>
+        )}
       </div>
 
       <Separator className="mx-3 bg-sidebar-border/50" />

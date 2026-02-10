@@ -17,6 +17,7 @@ export function useGlobalShortcuts() {
   const navigate = useNavigate();
   const toggleSidebar = useAppStore((s) => s.toggleSidebar);
   const cycleTheme = useAppStore((s) => s.cycleTheme);
+  const activePageType = useAppStore((s) => s.activePageType);
   const activeSession = useAppStore((s) => s.activeSession);
   const pauseSession = useAppStore((s) => s.pauseSession);
   const resumeSession = useAppStore((s) => s.resumeSession);
@@ -47,10 +48,12 @@ export function useGlobalShortcuts() {
         return;
       }
 
-      // ⌘+Shift+F → Focus view
+      // ⌘+Shift+F → Focus view (only from Kanban boards)
       if (meta && e.shiftKey && e.key.toLowerCase() === "f") {
         e.preventDefault();
-        navigate("/focus");
+        if (activePageType === "kanban") {
+          navigate("/focus");
+        }
         return;
       }
 
@@ -75,5 +78,5 @@ export function useGlobalShortcuts() {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [toggleSidebar, cycleTheme, navigate, activeSession, pauseSession, resumeSession, toggleZenMode]);
+  }, [toggleSidebar, cycleTheme, navigate, activePageType, activeSession, pauseSession, resumeSession, toggleZenMode]);
 }

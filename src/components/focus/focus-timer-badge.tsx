@@ -20,6 +20,7 @@ function formatTime(seconds: number): string {
 export function FocusTimerBadge() {
   const navigate = useNavigate();
   const session = useAppStore((s) => s.activeSession);
+  const activePageType = useAppStore((s) => s.activePageType);
   const toggleZenMode = useAppStore((s) => s.toggleZenMode);
   const { pause, resume, stop, remainingSeconds } = useFocusTimer();
   const [showControls, setShowControls] = useState(false);
@@ -40,7 +41,10 @@ export function FocusTimerBadge() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [showControls]);
 
+  // When no active session, only show Focus button on Kanban pages
   if (!session) {
+    if (activePageType !== "kanban") return null;
+    
     return (
       <Tooltip>
         <TooltipTrigger asChild>
