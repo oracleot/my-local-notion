@@ -25,6 +25,7 @@ export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast }
   );
   const activeSession = useAppStore((s) => s.activeSession);
   const isActive = activeSession?.cardId === block.cardId;
+  const isThisBlockRunning = activeSession?.timeBlockId === block.id;
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: block.id,
@@ -88,7 +89,7 @@ export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast }
           </Button>
         )}
 
-        {!isPast && block.status !== "skipped" && (
+        {!isPast && block.status !== "skipped" && !isThisBlockRunning && (
           <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover/block:opacity-100">
             {block.status !== "completed" && !isActive && !activeSession && (
               <Button
