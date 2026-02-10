@@ -115,15 +115,15 @@ export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast, 
 
       <div className="ml-auto flex shrink-0 items-center gap-0.5">
         {!isBreak && block.status === "skipped" && onReschedule && (
-          <Button
-            variant="ghost"
-            size="sm"
+            <Button
+              variant="ghost"
+              size="sm"
             className="h-5 gap-0.5 px-1.5 text-[10px] text-amber-600 hover:text-amber-700 hover:bg-amber-500/10 dark:text-amber-400"
-            onClick={onReschedule}
-          >
-            <RefreshCw className="h-2.5 w-2.5" />
-            Reschedule
-          </Button>
+              onClick={onReschedule}
+            >
+              <RefreshCw className="h-2.5 w-2.5" />
+              Reschedule
+            </Button>
         )}
 
         {!isPast && block.status !== "skipped" && !isThisBlockRunning && (

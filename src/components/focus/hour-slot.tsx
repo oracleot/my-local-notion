@@ -39,7 +39,6 @@ interface HourSlotProps {
   onAddBreak: () => void;
   onStartBlock: (block: TimeBlock) => void;
   onDeleteBlock: (id: string) => void;
-  onRescheduleBlock?: (block: TimeBlock) => void;
 }
 
 export function HourSlot({
@@ -55,7 +54,6 @@ export function HourSlot({
   onAddBreak,
   onStartBlock,
   onDeleteBlock,
-  onRescheduleBlock,
 }: HourSlotProps) {
   const canAcceptDrop = draggedBlockDuration
     ? remainingCapacity >= draggedBlockDuration
@@ -93,7 +91,7 @@ export function HourSlot({
       className={`
         group relative flex min-h-[56px] transition-colors
         ${isPast ? "opacity-45 cursor-not-allowed" : ""}
-        ${isOver && canAcceptDrop && !isPast ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : isCurrent ? "bg-primary/5" : isDragOver && canAcceptDrop && !isPast ? "bg-muted/15" : isPast ? "" : "hover:bg-muted/30"}
+        ${isOver && canAcceptDrop && !isPast ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : isDragOver && canAcceptDrop && !isPast ? "bg-muted/15" : isPast ? "" : "hover:bg-muted/30"}
       `}
     >
       {isCurrent && (
@@ -114,17 +112,13 @@ export function HourSlot({
       </div>
 
       {isCurrent && (
-        <div className="absolute left-16 top-0 h-full w-0.5 bg-primary/60" />
-      )}
-
-      {isCurrent && (
         <div
-          className="absolute top-[6px] h-[34px] w-[3px] bg-red-300 pointer-events-none z-10 rounded-full"
+          className="absolute h-[100%] w-[3px] bg-red-300 pointer-events-none z-10 rounded-full"
           style={{ left: `calc(4rem + 0.75rem + (100% - 4rem - 0.75rem - 0.5rem) * ${currentMinute / 60})` }}
         />
       )}
 
-      <div className="flex-1 py-2 pl-3 pr-2">
+      <div className="flex-1 pt-3 pl-3 pr-2">
         {hasBlocks ? (
           <div className="space-y-1">
             <SortableContext items={blockIds} strategy={horizontalListSortingStrategy}>
@@ -139,9 +133,6 @@ export function HourSlot({
                     block={block}
                     onStart={() => onStartBlock(block)}
                     onDelete={() => onDeleteBlock(block.id)}
-                    onReschedule={
-                      onRescheduleBlock ? () => onRescheduleBlock(block) : undefined
-                    }
                     isPast={isPast}
                     compact={block.durationMinutes < 30}
                     isActiveBlock={activeBlockId === block.id}
