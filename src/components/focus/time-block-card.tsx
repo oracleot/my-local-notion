@@ -80,7 +80,7 @@ export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast, 
                   {page.title || "Untitled Board"}
                 </p>
               )}
-              {block.status === "skipped" && (
+              {!isBreak && block.status === "skipped" && (
                 <span className="shrink-0 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-medium text-amber-600 dark:text-amber-400">
                   Missed
                 </span>
@@ -91,7 +91,7 @@ export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast, 
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-1">
-        {block.status === "skipped" && onReschedule && (
+        {!isBreak && block.status === "skipped" && onReschedule && (
           <Button
             variant="ghost"
             size="sm"
@@ -105,7 +105,7 @@ export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast, 
 
         {!isPast && block.status !== "skipped" && !isThisBlockRunning && (
           <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover/block:opacity-100">
-            {block.status !== "completed" && !isActive && !activeSession && (
+            {!isBreak && block.status !== "completed" && !isActive && !activeSession && (
               <Button
                 variant="ghost"
                 size="icon"

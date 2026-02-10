@@ -7,6 +7,7 @@ import { TimeSlotPicker } from "./time-slot-picker";
 import { DurationPickerDialog } from "./duration-picker-dialog";
 import { FocusViewHeader } from "./focus-view-header";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CreateTaskDialog } from "./create-task-dialog";
 
 import { SessionCompleteDialog } from "./session-complete-dialog";
 import { FocusSettingsDialog } from "./focus-settings-dialog";
@@ -25,6 +26,8 @@ export function FocusView() {
     pendingRescheduleBlock,
     settingsOpen,
     setSettingsOpen,
+    createTaskOpen,
+    setCreateTaskOpen,
     settings,
     setSettings,
     activeSession,
@@ -34,7 +37,10 @@ export function FocusView() {
     durationPickerOpen,
     setDurationPickerOpen,
     pendingDuration,
+    pendingBreak,
     handleSlotClick,
+    handleAddBreak,
+    handleCreateAndSchedule,
     handleStartBlock,
     handleSchedule,
     handleTimeSlotSelected,
@@ -76,6 +82,7 @@ export function FocusView() {
                 dayStartHour={settings.dayStartHour}
                 dayEndHour={settings.dayEndHour}
                 onSlotClick={handleSlotClick}
+                onAddBreak={handleAddBreak}
                 onStartBlock={handleStartBlock}
                 onMoveBlock={handleMoveBlock}
                 onRescheduleBlock={handleRescheduleBlock}
@@ -97,6 +104,13 @@ export function FocusView() {
         open={taskPickerOpen}
         onOpenChange={setTaskPickerOpen}
         onSchedule={handleSchedule}
+        onCreateNew={() => setCreateTaskOpen(true)}
+      />
+
+      <CreateTaskDialog
+        open={createTaskOpen}
+        onOpenChange={setCreateTaskOpen}
+        onCreateTask={handleCreateAndSchedule}
       />
 
       <TimeSlotPicker
@@ -112,10 +126,10 @@ export function FocusView() {
       <DurationPickerDialog
         open={durationPickerOpen}
         onOpenChange={setDurationPickerOpen}
-        taskTitle={pendingDuration?.card.card.title || "Select duration"}
-        availableCapacity={pendingDuration?.capacity ?? 60}
+        taskTitle={pendingBreak ? "Break" : (pendingDuration?.card.card.title || "Select duration")}
+        availableCapacity={pendingBreak?.capacity ?? pendingDuration?.capacity ?? 60}
         presets={settings.durationPresets}
-        isCurrentHour={pendingDuration?.isCurrentHour ?? false}
+        isCurrentHour={pendingBreak?.isCurrentHour ?? pendingDuration?.isCurrentHour ?? false}
         onSelectDuration={handleDurationSelected}
       />
 

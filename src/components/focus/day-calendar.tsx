@@ -24,6 +24,7 @@ interface DayCalendarProps {
   dayStartHour: number;
   dayEndHour: number;
   onSlotClick: (hour: number) => void;
+  onAddBreak: (hour: number) => void;
   onStartBlock: (block: TimeBlock) => void;
   onMoveBlock: (blockId: string, newHour: number) => void;
   onRescheduleBlock?: (block: TimeBlock) => void;
@@ -34,6 +35,7 @@ export function DayCalendar({
   dayStartHour,
   dayEndHour,
   onSlotClick,
+  onAddBreak,
   onStartBlock,
   onMoveBlock,
   onRescheduleBlock,
@@ -155,6 +157,7 @@ export function DayCalendar({
             isDragOver={draggedBlock !== null}
             draggedBlockDuration={draggedBlock?.durationMinutes}
             onSlotClick={() => onSlotClick(hour)}
+            onAddBreak={() => onAddBreak(hour)}
             onStartBlock={onStartBlock}
             onDeleteBlock={handleDelete}
             onRescheduleBlock={onRescheduleBlock}
