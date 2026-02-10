@@ -103,7 +103,7 @@ export async function findAvailableHour(date: string, dayStartHour: number, dayE
 }
 
 // ─── Focus settings ─────────────────────────────────────────────────────────
-const DEFAULT_SETTINGS: FocusSettings = { id: "settings", workMinutes: 60, breakMinutes: 10, audioEnabled: true, dayStartHour: 8, dayEndHour: 18, durationPresets: [25, 40, 60] };
+const DEFAULT_SETTINGS: FocusSettings = { id: "settings", workMinutes: 60, breakMinutes: 10, audioEnabled: true, dayStartHour: 8, dayEndHour: 18, durationPresets: [25, 40, 60], reminderIntervalMinutes: 5 };
 
 export async function getFocusSettings(): Promise<FocusSettings> {
   const existing = await db.focusSettings.get("settings");

@@ -6,6 +6,8 @@ import { SearchDialog } from "@/components/shared/search-dialog";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { FocusTimerBadge } from "@/components/focus/focus-timer-badge";
 import { useGlobalShortcuts } from "@/lib/use-global-shortcuts";
+import { useUnstartedTaskReminders } from "@/lib/use-unstarted-reminders";
+import { Toaster } from "sonner";
 import { PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,9 +57,11 @@ export function AppLayout() {
   );
 
   useGlobalShortcuts();
+  useUnstartedTaskReminders();
 
   return (
     <TooltipProvider delayDuration={200}>
+      <Toaster position="bottom-right" theme={document.documentElement.classList.contains("dark") ? "dark" : "light"} />
       <SearchDialog />
       <div className="flex h-screen w-screen overflow-hidden bg-background">
         {/* ── Sidebar ── */}
