@@ -41,7 +41,6 @@ export function DayCalendar({
   onAddBreak,
   onStartBlock,
   onMoveBlock,
-  onRescheduleBlock,
 }: DayCalendarProps) {
   const blocks = useLiveQuery(() => getTimeBlocksForDate(date), [date]);
   const [draggedBlock, setDraggedBlock] = useState<TimeBlock | null>(null);
@@ -185,7 +184,6 @@ export function DayCalendar({
             onAddBreak={() => onAddBreak(hour)}
             onStartBlock={onStartBlock}
             onDeleteBlock={handleDelete}
-            onRescheduleBlock={onRescheduleBlock}
           />
         ))}
       </div>

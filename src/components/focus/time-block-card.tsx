@@ -44,22 +44,18 @@ export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast, 
     disabled: isPast,
   });
 
-  const widthPercent = (block.durationMinutes / 60) * 100;
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    width: `${widthPercent}%`,
-    flexShrink: 0,
-    minWidth: 0,
-  };
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+    };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={`
-        group/block flex items-center gap-1.5 rounded-lg border transition-all duration-200
-        ${compact ? "px-1.5 py-1" : "px-2 py-1.5"}
+        group/block flex min-w-0 items-center gap-1.5 rounded-lg border transition-all duration-200
+        ${compact ? "px-2 py-1.5" : "px-3 py-2"} // Adjusted padding to ensure alignment with the red line
         ${isDragging ? "opacity-30" : ""}
         ${isActiveBlock ? "ring-2 ring-primary/50 animate-pulse" : ""}
         ${
@@ -119,15 +115,15 @@ export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast, 
 
       <div className="ml-auto flex shrink-0 items-center gap-0.5">
         {!isBreak && block.status === "skipped" && onReschedule && (
-          <Button
-            variant="ghost"
-            size="sm"
+            <Button
+              variant="ghost"
+              size="sm"
             className="h-5 gap-0.5 px-1.5 text-[10px] text-amber-600 hover:text-amber-700 hover:bg-amber-500/10 dark:text-amber-400"
-            onClick={onReschedule}
-          >
-            <RefreshCw className="h-2.5 w-2.5" />
-            Reschedule
-          </Button>
+              onClick={onReschedule}
+            >
+              <RefreshCw className="h-2.5 w-2.5" />
+              Reschedule
+            </Button>
         )}
 
         {!isPast && block.status !== "skipped" && !isThisBlockRunning && (

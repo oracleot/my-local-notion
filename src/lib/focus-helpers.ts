@@ -91,10 +91,10 @@ export async function createTimeBlock(cardId: string, pageId: string, date: stri
   // Calculate order: append to end of existing blocks in this slot
   const existing = (await db.timeBlocks.where("date").equals(date).toArray()).filter(b => b.startHour === startHour);
   const maxOrder = existing.length > 0 ? Math.max(...existing.map(b => b.order ?? 0)) : -1;
-  // For the current hour with no existing blocks, start at the current minute
+  // For the current hour, capture the current minute; future hours start at 0
   const now = new Date();
   const isCurrentHour = date === now.toISOString().split("T")[0] && startHour === now.getHours();
-  const startMinute = isCurrentHour && existing.length === 0 ? now.getMinutes() : 0;
+  const startMinute = isCurrentHour ? now.getMinutes() : 0;
   const block: TimeBlock = { id: crypto.randomUUID(), cardId, pageId, date, startHour, startMinute, durationMinutes, status: "scheduled", order: maxOrder + 1, createdAt: new Date(), updatedAt: new Date() };
   await db.timeBlocks.add(block);
   return block;
@@ -190,7 +190,8 @@ export async function markSkippedBlocks(date: string): Promise<void> {
       }
     } else if (hour === currentHour && date === today) {
       // Current hour — position-aware: skip blocks whose effective window has elapsed
-      let offset = 0;
+      const startOffset = sorted[0]?.startMinute ?? 0;
+      let offset = startOffset;
       for (const b of sorted) {
         const blockEnd = offset + b.durationMinutes;
         if (b.status === "scheduled" && blockEnd <= currentMinute) {

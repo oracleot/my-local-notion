@@ -45,7 +45,8 @@ export function useUnstartedTaskReminders() {
 
         // Find the block whose effective time window contains the current minute
         const currentMinuteNow = now.getMinutes();
-        let offset = 0;
+        const startOffset = sortedBlocks[0]?.startMinute ?? 0;
+        let offset = startOffset;
         let activeBlock: typeof blocks[0] | null = null;
         for (const block of sortedBlocks) {
           const blockEnd = offset + block.durationMinutes;

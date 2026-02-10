@@ -10,8 +10,12 @@ function formatHour(h: number): string {
 }
 
 /** Compute which block's time window contains the current minute */
-function getActiveBlockId(blocks: TimeBlock[], currentMinute: number): string | null {
-  let offset = 0;
+function getActiveBlockId(
+  blocks: TimeBlock[],
+  currentMinute: number,
+  startOffset: number
+): string | null {
+  let offset = startOffset;
   for (const b of blocks) {
     const end = offset + b.durationMinutes;
     if (currentMinute >= offset && currentMinute < end && b.status === "scheduled") {
@@ -35,7 +39,6 @@ interface HourSlotProps {
   onAddBreak: () => void;
   onStartBlock: (block: TimeBlock) => void;
   onDeleteBlock: (id: string) => void;
-  onRescheduleBlock?: (block: TimeBlock) => void;
 }
 
 export function HourSlot({
@@ -51,7 +54,6 @@ export function HourSlot({
   onAddBreak,
   onStartBlock,
   onDeleteBlock,
-  onRescheduleBlock,
 }: HourSlotProps) {
   const canAcceptDrop = draggedBlockDuration
     ? remainingCapacity >= draggedBlockDuration
@@ -70,11 +72,18 @@ export function HourSlot({
   // Sort blocks by order for horizontal rendering
   const sortedBlocks = [...blocks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const blockIds = sortedBlocks.map((b) => b.id);
-  const activeBlockId = isCurrent ? getActiveBlockId(sortedBlocks, currentMinute) : null;
+  const startOffset = sortedBlocks[0]?.startMinute ?? 0;
+  const activeBlockId = isCurrent ? getActiveBlockId(sortedBlocks, currentMinute, startOffset) : null;
 
-  // Elapsed-time spacer: if the first block starts after minute 0, show a gap
-  const firstBlockStartMinute = sortedBlocks.length > 0 ? (sortedBlocks[0].startMinute ?? 0) : 0;
-  const spacerPercent = (firstBlockStartMinute / 60) * 100;
+  const totalBlockMinutes = sortedBlocks.reduce((sum, b) => sum + b.durationMinutes, 0);
+  const remainingMinutes = 60 - startOffset - totalBlockMinutes;
+  const gridColumns = sortedBlocks.length > 0
+    ? [
+        ...(startOffset > 0 ? [`${startOffset}fr`] : []),
+        ...sortedBlocks.map((block) => `${block.durationMinutes}fr`),
+        ...(remainingMinutes > 0 ? [`${remainingMinutes}fr`] : []),
+      ].join(" ")
+    : "";
 
   return (
     <div
@@ -82,7 +91,7 @@ export function HourSlot({
       className={`
         group relative flex min-h-[56px] transition-colors
         ${isPast ? "opacity-45 cursor-not-allowed" : ""}
-        ${isOver && canAcceptDrop && !isPast ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : isCurrent ? "bg-primary/5" : isDragOver && canAcceptDrop && !isPast ? "bg-muted/15" : isPast ? "" : "hover:bg-muted/30"}
+        ${isOver && canAcceptDrop && !isPast ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : isDragOver && canAcceptDrop && !isPast ? "bg-muted/15" : isPast ? "" : "hover:bg-muted/30"}
       `}
     >
       {isCurrent && (
@@ -103,34 +112,33 @@ export function HourSlot({
       </div>
 
       {isCurrent && (
-        <div className="absolute left-16 top-0 h-full w-0.5 bg-primary/60" />
+        <div
+          className="absolute h-[100%] w-[3px] bg-red-300 pointer-events-none z-10 rounded-full"
+          style={{ left: `calc(4rem + 0.75rem + (100% - 4rem - 0.75rem - 0.5rem) * ${currentMinute / 60})` }}
+        />
       )}
 
-      <div className="flex-1 py-1.5 pl-3 pr-2">
+      <div className="flex-1 pt-3 pl-3 pr-2">
         {hasBlocks ? (
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <SortableContext items={blockIds} strategy={horizontalListSortingStrategy}>
-              <div className="flex flex-row gap-1">
-                {spacerPercent > 0 && (
-                  <div
-                    className="shrink-0"
-                    style={{ width: `${spacerPercent}%` }}
-                  />
-                )}
+              <div
+                className="grid gap-0.5"
+                style={{ gridTemplateColumns: gridColumns }}
+              >
+                {startOffset > 0 && <div className="min-w-0" />}
                 {sortedBlocks.map((block) => (
                   <TimeBlockCard
                     key={block.id}
                     block={block}
                     onStart={() => onStartBlock(block)}
                     onDelete={() => onDeleteBlock(block.id)}
-                    onReschedule={
-                      onRescheduleBlock ? () => onRescheduleBlock(block) : undefined
-                    }
                     isPast={isPast}
                     compact={block.durationMinutes < 30}
                     isActiveBlock={activeBlockId === block.id}
                   />
                 ))}
+                {remainingMinutes > 0 && <div className="min-w-0" />}
               </div>
             </SortableContext>
             {!isPast && !isFull && (
