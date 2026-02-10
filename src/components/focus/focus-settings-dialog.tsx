@@ -20,6 +20,7 @@ export function FocusSettingsDialog({ open, onOpenChange, onSettingsChange }: Fo
   const [dayEnd, setDayEnd] = useState(18);
   const [presets, setPresets] = useState<number[]>([25, 40, 60]);
   const [newPreset, setNewPreset] = useState("");
+  const [reminderInterval, setReminderInterval] = useState(5);
 
   useEffect(() => {
     if (!open) return;
@@ -28,6 +29,7 @@ export function FocusSettingsDialog({ open, onOpenChange, onSettingsChange }: Fo
       setDayStart(s.dayStartHour);
       setDayEnd(s.dayEndHour);
       setPresets(s.durationPresets ?? [25, 40, 60]);
+      setReminderInterval(s.reminderIntervalMinutes ?? 5);
     });
   }, [open]);
 
@@ -47,6 +49,7 @@ export function FocusSettingsDialog({ open, onOpenChange, onSettingsChange }: Fo
     const updated = await updateFocusSettings({
       workMinutes: 60, breakMinutes: 0, audioEnabled: audio,
       dayStartHour: dayStart, dayEndHour: dayEnd, durationPresets: presets,
+      reminderIntervalMinutes: reminderInterval,
     });
     loadFocusSettings({ workMinutes: updated.workMinutes, breakMinutes: updated.breakMinutes, audioEnabled: updated.audioEnabled });
     onSettingsChange(updated);
@@ -68,6 +71,21 @@ export function FocusSettingsDialog({ open, onOpenChange, onSettingsChange }: Fo
           </SettingRow>
           <SettingRow label="Day end hour">
             <HourSelect value={dayEnd} onChange={setDayEnd} mode="end" />
+          </SettingRow>
+          <SettingRow label="Reminder interval">
+            <select
+              value={reminderInterval}
+              onChange={(e) => setReminderInterval(Number(e.target.value))}
+              className="h-8 rounded-md border border-input bg-background px-2 text-[13px]"
+            >
+              <option value={0}>Disabled</option>
+              <option value={1}>1 minute</option>
+              <option value={2}>2 minutes</option>
+              <option value={3}>3 minutes</option>
+              <option value={5}>5 minutes</option>
+              <option value={10}>10 minutes</option>
+              <option value={15}>15 minutes</option>
+            </select>
           </SettingRow>
           <div className="space-y-2">
             <span className="text-[13px] text-foreground/80">Duration presets</span>
