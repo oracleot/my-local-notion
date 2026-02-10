@@ -25,3 +25,5 @@ dist-ssr
 
 # playwright test artifacts
 .playwright-mcp
+
+ideas_backlog.md

@@ -17,13 +17,9 @@ function loadPersistedSession(): FocusSession | null {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const session = JSON.parse(raw) as FocusSession;
-    // If it was running when the page closed, pause it and account for elapsed
-    if (session.isRunning) {
-      const elapsed = session.elapsedBeforePause + (Date.now() - session.startedAt) / 1000;
-      session.elapsedBeforePause = Math.min(elapsed, session.totalSeconds);
-      session.isRunning = false;
-      session.startedAt = 0;
-    }
+    // Keep running sessions as-is. getRemainingSeconds() uses wall-clock math
+    // to compute correct remaining time, even after app restart. If the session
+    // completed while the app was closed, remaining time will be 0.
     return session;
   } catch {
     return null;
