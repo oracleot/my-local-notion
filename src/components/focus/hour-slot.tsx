@@ -10,8 +10,12 @@ function formatHour(h: number): string {
 }
 
 /** Compute which block's time window contains the current minute */
-function getActiveBlockId(blocks: TimeBlock[], currentMinute: number): string | null {
-  let offset = 0;
+function getActiveBlockId(
+  blocks: TimeBlock[],
+  currentMinute: number,
+  startOffset: number
+): string | null {
+  let offset = startOffset;
   for (const b of blocks) {
     const end = offset + b.durationMinutes;
     if (currentMinute >= offset && currentMinute < end && b.status === "scheduled") {
@@ -70,11 +74,18 @@ export function HourSlot({
   // Sort blocks by order for horizontal rendering
   const sortedBlocks = [...blocks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const blockIds = sortedBlocks.map((b) => b.id);
-  const activeBlockId = isCurrent ? getActiveBlockId(sortedBlocks, currentMinute) : null;
+  const startOffset = sortedBlocks[0]?.startMinute ?? 0;
+  const activeBlockId = isCurrent ? getActiveBlockId(sortedBlocks, currentMinute, startOffset) : null;
 
-  // Elapsed-time spacer: if the first block starts after minute 0, show a gap
-  const firstBlockStartMinute = sortedBlocks.length > 0 ? (sortedBlocks[0].startMinute ?? 0) : 0;
-  const spacerPercent = (firstBlockStartMinute / 60) * 100;
+  const totalBlockMinutes = sortedBlocks.reduce((sum, b) => sum + b.durationMinutes, 0);
+  const remainingMinutes = 60 - startOffset - totalBlockMinutes;
+  const gridColumns = sortedBlocks.length > 0
+    ? [
+        ...(startOffset > 0 ? [`${startOffset}fr`] : []),
+        ...sortedBlocks.map((block) => `${block.durationMinutes}fr`),
+        ...(remainingMinutes > 0 ? [`${remainingMinutes}fr`] : []),
+      ].join(" ")
+    : "";
 
   return (
     <div
@@ -106,17 +117,22 @@ export function HourSlot({
         <div className="absolute left-16 top-0 h-full w-0.5 bg-primary/60" />
       )}
 
-      <div className="flex-1 py-1.5 pl-3 pr-2">
+      {isCurrent && (
+        <div
+          className="absolute top-[6px] h-[34px] w-[3px] bg-red-300 pointer-events-none z-10 rounded-full"
+          style={{ left: `calc(4rem + 0.75rem + (100% - 4rem - 0.75rem - 0.5rem) * ${currentMinute / 60})` }}
+        />
+      )}
+
+      <div className="flex-1 py-2 pl-3 pr-2">
         {hasBlocks ? (
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <SortableContext items={blockIds} strategy={horizontalListSortingStrategy}>
-              <div className="flex flex-row gap-1">
-                {spacerPercent > 0 && (
-                  <div
-                    className="shrink-0"
-                    style={{ width: `${spacerPercent}%` }}
-                  />
-                )}
+              <div
+                className="grid gap-0.5"
+                style={{ gridTemplateColumns: gridColumns }}
+              >
+                {startOffset > 0 && <div className="min-w-0" />}
                 {sortedBlocks.map((block) => (
                   <TimeBlockCard
                     key={block.id}
@@ -131,6 +147,7 @@ export function HourSlot({
                     isActiveBlock={activeBlockId === block.id}
                   />
                 ))}
+                {remainingMinutes > 0 && <div className="min-w-0" />}
               </div>
             </SortableContext>
             {!isPast && !isFull && (
