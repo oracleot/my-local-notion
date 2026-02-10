@@ -12,16 +12,25 @@ function formatHour(h: number): string {
 /** Compute which block's time window contains the current minute */
 function getActiveBlockId(
   blocks: TimeBlock[],
-  currentMinute: number,
-  startOffset: number
+  currentMinute: number
 ): string | null {
-  let offset = startOffset;
-  for (const b of blocks) {
-    const end = offset + b.durationMinutes;
-    if (currentMinute >= offset && currentMinute < end && b.status === "scheduled") {
+  // Sort by order same as rendering
+  const sorted = [...blocks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  let currentPos = 0;
+
+  // Initial gap if first block starts late (and we respect it)
+  if (sorted.length > 0 && sorted[0].startMinute > 0) {
+    currentPos = sorted[0].startMinute;
+  }
+
+  for (const b of sorted) {
+    // Respect explicit startMinute if it creates a gap; otherwise stack
+    const start = Math.max(currentPos, b.startMinute);
+    const end = start + b.durationMinutes;
+    if (currentMinute >= start && currentMinute < end && b.status === "scheduled") {
       return b.id;
     }
-    offset = end;
+    currentPos = end;
   }
   return null;
 }
@@ -72,17 +81,37 @@ export function HourSlot({
   // Sort blocks by order for horizontal rendering
   const sortedBlocks = [...blocks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const blockIds = sortedBlocks.map((b) => b.id);
-  const startOffset = sortedBlocks[0]?.startMinute ?? 0;
-  const activeBlockId = isCurrent ? getActiveBlockId(sortedBlocks, currentMinute, startOffset) : null;
+  const activeBlockId = isCurrent ? getActiveBlockId(sortedBlocks, currentMinute) : null;
 
-  const totalBlockMinutes = sortedBlocks.reduce((sum, b) => sum + b.durationMinutes, 0);
-  const remainingMinutes = 60 - startOffset - totalBlockMinutes;
-  const gridColumns = sortedBlocks.length > 0
-    ? [
-        ...(startOffset > 0 ? [`${startOffset}fr`] : []),
-        ...sortedBlocks.map((block) => `${block.durationMinutes}fr`),
-        ...(remainingMinutes > 0 ? [`${remainingMinutes}fr`] : []),
-      ].join(" ")
+  // Build grid items (blocks + gaps)
+  const renderItems: Array<{ type: 'gap' | 'block'; width: number; block?: TimeBlock }> = [];
+  let currentPos = 0;
+
+  if (sortedBlocks.length > 0) {
+    // Gap before first block
+    if (sortedBlocks[0].startMinute > 0) {
+      renderItems.push({ type: 'gap', width: sortedBlocks[0].startMinute });
+      currentPos = sortedBlocks[0].startMinute;
+    }
+
+    for (const block of sortedBlocks) {
+      // Gap between previous end and current start
+      const start = Math.max(currentPos, block.startMinute);
+      if (start > currentPos) {
+        renderItems.push({ type: 'gap', width: start - currentPos });
+      }
+      renderItems.push({ type: 'block', width: block.durationMinutes, block });
+      currentPos = start + block.durationMinutes;
+    }
+  }
+
+  // Final gap
+  if (60 - currentPos > 0) {
+    renderItems.push({ type: 'gap', width: 60 - currentPos });
+  }
+
+  const gridColumns = renderItems.length > 0
+    ? renderItems.map((item) => `${item.width}fr`).join(" ")
     : "";
 
   return (
@@ -126,19 +155,21 @@ export function HourSlot({
                 className="grid gap-0.5"
                 style={{ gridTemplateColumns: gridColumns }}
               >
-                {startOffset > 0 && <div className="min-w-0" />}
-                {sortedBlocks.map((block) => (
-                  <TimeBlockCard
-                    key={block.id}
-                    block={block}
-                    onStart={() => onStartBlock(block)}
-                    onDelete={() => onDeleteBlock(block.id)}
-                    isPast={isPast}
-                    compact={block.durationMinutes < 30}
-                    isActiveBlock={activeBlockId === block.id}
-                  />
-                ))}
-                {remainingMinutes > 0 && <div className="min-w-0" />}
+                {renderItems.map((item, index) =>
+                  item.type === "block" && item.block ? (
+                    <TimeBlockCard
+                      key={item.block.id}
+                      block={item.block}
+                      onStart={() => onStartBlock(item.block!)}
+                      onDelete={() => onDeleteBlock(item.block!.id)}
+                      isPast={isPast}
+                      compact={item.block.durationMinutes < 30}
+                      isActiveBlock={activeBlockId === item.block.id}
+                    />
+                  ) : (
+                    <div key={`gap-${index}`} className="min-w-0" />
+                  )
+                )}
               </div>
             </SortableContext>
             {!isPast && !isFull && (

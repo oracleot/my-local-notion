@@ -128,7 +128,7 @@ export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast, 
 
         {!isPast && block.status !== "skipped" && !isThisBlockRunning && (
           <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover/block:opacity-100">
-            {!isBreak && block.status !== "completed" && !isActive && !activeSession && (
+            {!isBreak && block.status !== "completed" && !isActive && !activeSession && isActiveBlock && (
               <Button
                 variant="ghost"
                 size="icon"
