@@ -5,6 +5,8 @@ import { useAppStore } from "@/stores/app-store";
 import { getFocusSettings } from "@/lib/focus-helpers";
 import type { TimeBlock, KanbanCard } from "@/types";
 
+const NOTIFICATION_STORAGE_KEY = "focus-reminder-notifications";
+
 /**
  * Hook that polls for unstarted scheduled tasks in the current hour block
  * and displays reminder notifications every N minutes (configurable).
@@ -19,7 +21,7 @@ export function useUnstartedTaskReminders() {
   const zenMode = useAppStore((s) => s.zenMode);
   const activeSession = useAppStore((s) => s.activeSession);
   const startSession = useAppStore((s) => s.startSession);
-  const lastNotifiedAt = useRef(new Map<string, number>());
+  const lastNotifiedAt = useRef(loadNotificationHistory());
 
   useEffect(() => {
     const checkUnstartedTasks = async () => {
@@ -69,7 +71,9 @@ export function useUnstartedTaskReminders() {
           showReminderToast(block, card, page.title || "Untitled Board", startSession, audioEnabled);
           
           // Update last notification time
-          lastNotifiedAt.current.set(block.id, Date.now());
+          const timestamp = Date.now();
+          lastNotifiedAt.current.set(block.id, timestamp);
+          saveNotificationHistory(lastNotifiedAt.current);
         }
       } catch (error) {
         console.error("Error checking unstarted tasks:", error);
@@ -185,5 +189,40 @@ function playReminderChime() {
     };
   } catch {
     // Silently fail if AudioContext is unavailable
+  }
+}
+
+// ─── Notification History Persistence ──────────────────────────────────────
+
+/**
+ * Load notification history from localStorage.
+ * Cleans up entries older than 2 hours.
+ */
+function loadNotificationHistory(): Map<string, number> {
+  try {
+    const raw = localStorage.getItem(NOTIFICATION_STORAGE_KEY);
+    if (!raw) return new Map();
+
+    const data = JSON.parse(raw) as Record<string, number>;
+    const now = Date.now();
+    const twoHoursAgo = now - 2 * 60 * 60 * 1000;
+
+    // Filter out stale entries (older than 2 hours)
+    const filtered = Object.entries(data).filter(([, timestamp]) => timestamp > twoHoursAgo);
+    return new Map(filtered);
+  } catch {
+    return new Map();
+  }
+}
+
+/**
+ * Save notification history to localStorage
+ */
+function saveNotificationHistory(map: Map<string, number>) {
+  try {
+    const obj = Object.fromEntries(map);
+    localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(obj));
+  } catch {
+    // Silently fail if localStorage is unavailable
   }
 }
