@@ -4,6 +4,7 @@ import { DayCalendar } from "./day-calendar";
 import { WeekCalendar } from "./week-calendar";
 import { TaskPickerDialog } from "./task-picker-dialog";
 import { TimeSlotPicker } from "./time-slot-picker";
+import { DurationPickerDialog } from "./duration-picker-dialog";
 import { FocusViewHeader } from "./focus-view-header";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -29,10 +30,15 @@ export function FocusView() {
     activeSession,
     scheduledCount,
     totalMinutes,
+    // Duration picker
+    durationPickerOpen,
+    setDurationPickerOpen,
+    pendingDuration,
     handleSlotClick,
     handleStartBlock,
     handleSchedule,
     handleTimeSlotSelected,
+    handleDurationSelected,
     handleRescheduleBlock,
     handleMoveBlock,
     navigateDay,
@@ -101,6 +107,16 @@ export function FocusView() {
         dayEndHour={settings.dayEndHour}
         taskTitle={pendingRescheduleBlock ? "Reschedule task" : pendingCard?.card.title || "Select time"}
         onSelectHour={handleTimeSlotSelected}
+      />
+
+      <DurationPickerDialog
+        open={durationPickerOpen}
+        onOpenChange={setDurationPickerOpen}
+        taskTitle={pendingDuration?.card.card.title || "Select duration"}
+        availableCapacity={pendingDuration?.capacity ?? 60}
+        presets={settings.durationPresets}
+        isCurrentHour={pendingDuration?.isCurrentHour ?? false}
+        onSelectDuration={handleDurationSelected}
       />
 
       {activeSession && isComplete && (

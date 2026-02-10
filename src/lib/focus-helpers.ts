@@ -2,15 +2,12 @@ import { db } from "@/lib/db";
 import type { Page, KanbanCard, TimeBlock, FocusSettings } from "@/types";
 
 // ─── Done column detection ──────────────────────────────────────────────────
-/** Returns the "done" column id for a board page. Priority: 1) User override (doneColumnId), 2) Rightmost column (highest order). */
 export function getDoneColumnId(page: Page): string | null {
   if (page.doneColumnId) return page.doneColumnId;
   if (page.columns.length === 0) return null;
-  const sorted = [...page.columns].sort((a, b) => b.order - a.order);
-  return sorted[0].id;
+  return [...page.columns].sort((a, b) => b.order - a.order)[0].id;
 }
 
-/** Checks if a card is in the done column for its board. */
 export function isCardDone(card: KanbanCard, page: Page): boolean {
   const doneColId = getDoneColumnId(page);
   return doneColId !== null && card.columnId === doneColId;
@@ -18,102 +15,64 @@ export function isCardDone(card: KanbanCard, page: Page): boolean {
 
 // ─── Eligible cards ─────────────────────────────────────────────────────────
 export interface EligibleCard {
-  card: KanbanCard;
-  boardName: string;
-  columnName: string;
-  pageId: string;
+  card: KanbanCard; boardName: string; columnName: string; pageId: string;
 }
 
-/** Fetches all kanban cards that are NOT in a "done" column, grouped with their board/column context. */
 export async function getAllEligibleCards(): Promise<EligibleCard[]> {
-  const boardPages = await db.pages
-    .filter((p) => p.pageType === "kanban")
-    .toArray();
-
+  const boardPages = await db.pages.filter((p) => p.pageType === "kanban").toArray();
   const results: EligibleCard[] = [];
-
   for (const page of boardPages) {
     const doneColId = getDoneColumnId(page);
-    const cards = await db.kanbanCards
-      .where("pageId")
-      .equals(page.id)
-      .toArray();
-
-    // Only include top-level cards (not subtasks)
-    const topLevelCards = cards.filter(
-      (c) => c.parentId === null && c.columnId !== doneColId
-    );
-
-    for (const card of topLevelCards) {
+    const cards = await db.kanbanCards.where("pageId").equals(page.id).toArray();
+    const topLevel = cards.filter((c) => c.parentId === null && c.columnId !== doneColId);
+    for (const card of topLevel) {
       const col = page.columns.find((c) => c.id === card.columnId);
-      results.push({
-        card,
-        boardName: page.title || "Untitled Board",
-        columnName: col?.title || "Unknown",
-        pageId: page.id,
-      });
+      results.push({ card, boardName: page.title || "Untitled Board", columnName: col?.title || "Unknown", pageId: page.id });
     }
   }
-
   return results;
 }
 
-/** Fetches eligible cards that DON'T have ANY time blocks scheduled. */
 export async function getUnscheduledCards(): Promise<EligibleCard[]> {
   const allEligible = await getAllEligibleCards();
-  const scheduledCardIds = new Set(
-    (await db.timeBlocks.toArray()).map(b => b.cardId)
-  );
-  return allEligible.filter(ec => !scheduledCardIds.has(ec.card.id));
+  const scheduledIds = new Set((await db.timeBlocks.toArray()).map(b => b.cardId));
+  return allEligible.filter(ec => !scheduledIds.has(ec.card.id));
 }
 
 // ─── Time block CRUD ────────────────────────────────────────────────────────
-
-export async function getTimeBlocksForDate(
-  date: string
-): Promise<TimeBlock[]> {
+export async function getTimeBlocksForDate(date: string): Promise<TimeBlock[]> {
   return db.timeBlocks.where("date").equals(date).toArray();
 }
 
-export async function getTimeBlocksForWeek(
-  weekStartDate: string
-): Promise<TimeBlock[]> {
-  const start = new Date(weekStartDate);
-  const dates: string[] = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(start);
-    d.setDate(d.getDate() + i);
-    dates.push(d.toISOString().split("T")[0]);
-  }
+export async function getTimeBlocksForWeek(weekStartDate: string): Promise<TimeBlock[]> {
+  const dates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStartDate); d.setDate(d.getDate() + i);
+    return d.toISOString().split("T")[0];
+  });
   return db.timeBlocks.where("date").anyOf(dates).toArray();
 }
 
-export async function createTimeBlock(
-  cardId: string,
-  pageId: string,
-  date: string,
-  startHour: number,
-  durationMinutes: number = 60
-): Promise<TimeBlock> {
-  const block: TimeBlock = {
-    id: crypto.randomUUID(),
-    cardId,
-    pageId,
-    date,
-    startHour,
-    durationMinutes,
-    status: "scheduled",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+/** Returns remaining capacity in minutes for a (date, hour) slot. Factors in elapsed time for current hour. */
+export async function getRemainingCapacity(date: string, hour: number): Promise<number> {
+  const blocks = (await db.timeBlocks.where("date").equals(date).toArray()).filter((b) => b.startHour === hour);
+  const usedMinutes = blocks.reduce((sum, b) => sum + b.durationMinutes, 0);
+  let baseCapacity = 60 - usedMinutes;
+  const now = new Date();
+  if (date === now.toISOString().split("T")[0] && hour === now.getHours()) {
+    baseCapacity = Math.min(baseCapacity, 60 - now.getMinutes());
+  }
+  return Math.max(0, baseCapacity);
+}
+
+export async function createTimeBlock(cardId: string, pageId: string, date: string, startHour: number, durationMinutes = 60): Promise<TimeBlock> {
+  const capacity = await getRemainingCapacity(date, startHour);
+  if (durationMinutes > capacity) throw new Error(`Duration (${durationMinutes}m) exceeds capacity (${capacity}m)`);
+  const block: TimeBlock = { id: crypto.randomUUID(), cardId, pageId, date, startHour, durationMinutes, status: "scheduled", createdAt: new Date(), updatedAt: new Date() };
   await db.timeBlocks.add(block);
   return block;
 }
 
-export async function updateTimeBlock(
-  id: string,
-  updates: Partial<Pick<TimeBlock, "startHour" | "date" | "durationMinutes" | "status">>
-): Promise<void> {
+export async function updateTimeBlock(id: string, updates: Partial<Pick<TimeBlock, "startHour" | "date" | "durationMinutes" | "status">>): Promise<void> {
   await db.timeBlocks.update(id, { ...updates, updatedAt: new Date() });
 }
 
@@ -121,53 +80,42 @@ export async function deleteTimeBlock(id: string): Promise<void> {
   await db.timeBlocks.delete(id);
 }
 
-/** Find the best available hour slot for scheduling. Tries current hour if in range and available, else finds first free slot. */
-export async function findAvailableHour(
-  date: string,
-  dayStartHour: number,
-  dayEndHour: number
-): Promise<number> {
-  const existingBlocks = await db.timeBlocks.where("date").equals(date).toArray();
-  const occupiedHours = new Set(existingBlocks.map(b => b.startHour));
-  
+/** Find best available hour slot. Tries current hour if valid, else first slot with capacity. */
+export async function findAvailableHour(date: string, dayStartHour: number, dayEndHour: number, minCapacity = 1): Promise<number> {
+  const blocks = await db.timeBlocks.where("date").equals(date).toArray();
   const now = new Date();
-  const currentHour = now.getHours();
   const isToday = date === now.toISOString().split("T")[0];
-  
-  // Try current hour if it's today, in range, and available
-  if (isToday && currentHour >= dayStartHour && currentHour < dayEndHour && !occupiedHours.has(currentHour)) {
+  const currentHour = isToday ? now.getHours() : -1;
+  const currentMinute = isToday ? now.getMinutes() : 0;
+
+  const getCapacity = (h: number) => {
+    const used = blocks.filter((b) => b.startHour === h).reduce((s, b) => s + b.durationMinutes, 0);
+    let rem = 60 - used;
+    if (h === currentHour) rem = Math.min(rem, 60 - currentMinute);
+    return Math.max(0, rem);
+  };
+
+  if (isToday && currentHour >= dayStartHour && currentHour < dayEndHour && getCapacity(currentHour) >= minCapacity) {
     return currentHour;
   }
-  
-  // Find first available slot
   for (let h = dayStartHour; h < dayEndHour; h++) {
-    if (!occupiedHours.has(h)) return h;
+    if (isToday && h < currentHour) continue;
+    if (getCapacity(h) >= minCapacity) return h;
   }
-  
-  // Fallback to start hour if all occupied
   return dayStartHour;
 }
 
 // ─── Focus settings ─────────────────────────────────────────────────────────
-const DEFAULT_SETTINGS: FocusSettings = {
-  id: "settings",
-  workMinutes: 60,
-  breakMinutes: 10,
-  audioEnabled: true,
-  dayStartHour: 8,
-  dayEndHour: 18,
-};
+const DEFAULT_SETTINGS: FocusSettings = { id: "settings", workMinutes: 60, breakMinutes: 10, audioEnabled: true, dayStartHour: 8, dayEndHour: 18, durationPresets: [25, 40, 60] };
 
 export async function getFocusSettings(): Promise<FocusSettings> {
   const existing = await db.focusSettings.get("settings");
-  if (existing) return existing;
+  if (existing) return { ...DEFAULT_SETTINGS, ...existing };
   await db.focusSettings.add(DEFAULT_SETTINGS);
   return DEFAULT_SETTINGS;
 }
 
-export async function updateFocusSettings(
-  updates: Partial<Omit<FocusSettings, "id">>
-): Promise<FocusSettings> {
+export async function updateFocusSettings(updates: Partial<Omit<FocusSettings, "id">>): Promise<FocusSettings> {
   const current = await getFocusSettings();
   const merged = { ...current, ...updates };
   await db.focusSettings.put(merged);
@@ -175,23 +123,16 @@ export async function updateFocusSettings(
 }
 
 // ─── Cleanup helper ─────────────────────────────────────────────────────────
-/** Remove time blocks for a deleted card. */
 export async function removeTimeBlocksForCard(cardId: string): Promise<void> {
   await db.timeBlocks.where("cardId").equals(cardId).delete();
 }
 
-/** Mark any past "scheduled" blocks as "skipped" for the given date. */
 export async function markSkippedBlocks(date: string): Promise<void> {
   const now = new Date();
   const today = now.toISOString().split("T")[0];
-  
   const blocks = await db.timeBlocks.where("date").equals(date).toArray();
   const currentHour = date === today ? now.getHours() : (date < today ? 24 : -1);
-  
-  const toSkip = blocks.filter(
-    (b) => b.status === "scheduled" && b.startHour < currentHour
-  );
-  
+  const toSkip = blocks.filter((b) => b.status === "scheduled" && b.startHour < currentHour);
   for (const b of toSkip) {
     await db.timeBlocks.update(b.id, { status: "skipped", updatedAt: new Date() });
   }

@@ -12,9 +12,10 @@ interface TimeBlockCardProps {
   onDelete: () => void;
   onReschedule?: () => void;
   isPast?: boolean;
+  compact?: boolean;
 }
 
-export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast }: TimeBlockCardProps) {
+export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast, compact }: TimeBlockCardProps) {
   const card = useLiveQuery(
     () => db.kanbanCards.get(block.cardId),
     [block.cardId]
@@ -36,8 +37,8 @@ export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast }
     <div
       ref={setNodeRef}
       className={`
-        group/block flex items-center gap-2 rounded-lg border px-2.5 py-2
-        transition-all duration-200
+        group/block flex items-center gap-2 rounded-lg border transition-all duration-200
+        ${compact ? "px-2 py-1" : "px-2.5 py-2"}
         ${isDragging ? "opacity-30" : ""}
         ${
           block.status === "completed"

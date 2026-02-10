@@ -12,8 +12,11 @@ interface HourSlotProps {
   hour: number;
   isCurrent: boolean;
   isPast: boolean;
-  block: TimeBlock | undefined;
+  blocks: TimeBlock[];
+  remainingCapacity: number;
+  currentMinute: number;
   isDragOver: boolean;
+  draggedBlockDuration?: number;
   onSlotClick: () => void;
   onStartBlock: (block: TimeBlock) => void;
   onDeleteBlock: (id: string) => void;
@@ -24,18 +27,29 @@ export function HourSlot({
   hour,
   isCurrent,
   isPast,
-  block,
+  blocks,
+  remainingCapacity,
+  currentMinute,
   isDragOver,
+  draggedBlockDuration,
   onSlotClick,
   onStartBlock,
   onDeleteBlock,
   onRescheduleBlock,
 }: HourSlotProps) {
+  const canAcceptDrop = draggedBlockDuration
+    ? remainingCapacity >= draggedBlockDuration
+    : remainingCapacity > 0;
+
   const { setNodeRef, isOver } = useDroppable({
     id: `hour-${hour}`,
     data: { hour },
-    disabled: isPast,
+    disabled: isPast || !canAcceptDrop,
   });
+
+  const hasBlocks = blocks.length > 0;
+  const isFull = remainingCapacity === 0;
+  const elapsedPercent = isCurrent ? (currentMinute / 60) * 100 : 0;
 
   return (
     <div
@@ -43,9 +57,17 @@ export function HourSlot({
       className={`
         group relative flex min-h-[56px] transition-colors
         ${isPast ? "opacity-45 cursor-not-allowed" : ""}
-        ${isOver && !isPast ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : isCurrent ? "bg-primary/5" : isDragOver && !isPast ? "bg-muted/15" : isPast ? "" : "hover:bg-muted/30"}
+        ${isOver && canAcceptDrop && !isPast ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : isCurrent ? "bg-primary/5" : isDragOver && canAcceptDrop && !isPast ? "bg-muted/15" : isPast ? "" : "hover:bg-muted/30"}
       `}
     >
+      {/* Time progress indicator for current hour */}
+      {isCurrent && (
+        <div
+          className="absolute inset-0 bg-primary/[0.03] pointer-events-none"
+          style={{ width: `${elapsedPercent}%` }}
+        />
+      )}
+
       <div
         className={`
           flex w-16 shrink-0 items-start justify-end pr-3 pt-2
@@ -61,14 +83,31 @@ export function HourSlot({
       )}
 
       <div className="flex-1 py-1.5 pl-3 pr-2">
-        {block ? (
-          <TimeBlockCard
-            block={block}
-            onStart={() => onStartBlock(block)}
-            onDelete={() => onDeleteBlock(block.id)}
-            onReschedule={onRescheduleBlock ? () => onRescheduleBlock(block) : undefined}
-            isPast={isPast}
-          />
+        {hasBlocks ? (
+          <div className="space-y-1.5">
+            {blocks.map((block) => (
+              <TimeBlockCard
+                key={block.id}
+                block={block}
+                onStart={() => onStartBlock(block)}
+                onDelete={() => onDeleteBlock(block.id)}
+                onReschedule={
+                  onRescheduleBlock ? () => onRescheduleBlock(block) : undefined
+                }
+                isPast={isPast}
+                compact={block.durationMinutes < 30}
+              />
+            ))}
+            {/* Show add button if there's remaining capacity */}
+            {!isPast && !isFull && (
+              <button
+                onClick={onSlotClick}
+                className="flex h-7 w-full items-center justify-center rounded-md border border-dashed border-border/30 text-[11px] text-muted-foreground/40 transition-colors hover:border-border/50 hover:text-muted-foreground/60"
+              >
+                + Add task ({remainingCapacity}m free)
+              </button>
+            )}
+          </div>
         ) : isPast ? (
           <div className="flex h-full min-h-[40px] w-full items-center px-2 text-[12px] text-muted-foreground/20">
             Past
