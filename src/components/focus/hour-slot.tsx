@@ -18,6 +18,7 @@ interface HourSlotProps {
   isDragOver: boolean;
   draggedBlockDuration?: number;
   onSlotClick: () => void;
+  onAddBreak: () => void;
   onStartBlock: (block: TimeBlock) => void;
   onDeleteBlock: (id: string) => void;
   onRescheduleBlock?: (block: TimeBlock) => void;
@@ -33,6 +34,7 @@ export function HourSlot({
   isDragOver,
   draggedBlockDuration,
   onSlotClick,
+  onAddBreak,
   onStartBlock,
   onDeleteBlock,
   onRescheduleBlock,
@@ -100,12 +102,20 @@ export function HourSlot({
             ))}
             {/* Show add button if there's remaining capacity */}
             {!isPast && !isFull && (
-              <button
-                onClick={onSlotClick}
-                className="flex h-7 w-full items-center justify-center rounded-md border border-dashed border-border/30 text-[11px] text-muted-foreground/40 transition-colors hover:border-border/50 hover:text-muted-foreground/60"
-              >
-                + Add task ({remainingCapacity}m free)
-              </button>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={onSlotClick}
+                  className="flex h-7 flex-1 items-center justify-center rounded-md border border-dashed border-border/30 text-[11px] text-muted-foreground/40 transition-colors hover:border-border/50 hover:text-muted-foreground/60"
+                >
+                  + Add task ({remainingCapacity}m)
+                </button>
+                <button
+                  onClick={onAddBreak}
+                  className="flex h-7 px-3 items-center justify-center rounded-md border border-dashed border-orange-400/30 text-[11px] text-orange-600/50 transition-colors hover:border-orange-400/50 hover:text-orange-600/70 dark:text-orange-400/50 dark:hover:text-orange-400/70"
+                >
+                  + Break
+                </button>
+              </div>
             )}
           </div>
         ) : isPast ? (
@@ -113,12 +123,20 @@ export function HourSlot({
             Past
           </div>
         ) : (
-          <button
-            onClick={onSlotClick}
-            className="flex h-full min-h-[40px] w-full items-center rounded-md border border-dashed border-transparent px-2 text-[12px] text-muted-foreground/30 transition-colors hover:border-border/50 hover:text-muted-foreground/60"
-          >
-            + Add task
-          </button>
+          <div className="flex gap-1.5">
+            <button
+              onClick={onSlotClick}
+              className="flex h-full min-h-[40px] flex-1 items-center rounded-md border border-dashed border-transparent px-2 text-[12px] text-muted-foreground/30 transition-colors hover:border-border/50 hover:text-muted-foreground/60"
+            >
+              + Add task
+            </button>
+            <button
+              onClick={onAddBreak}
+              className="flex h-full min-h-[40px] px-3 items-center rounded-md border border-dashed border-transparent text-[12px] text-orange-600/40 transition-colors hover:border-orange-400/50 hover:text-orange-600/60 dark:text-orange-400/40 dark:hover:text-orange-400/60"
+            >
+              + Break
+            </button>
+          </div>
         )}
       </div>
     </div>

@@ -10,18 +10,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, CalendarPlus, LayoutGrid } from "lucide-react";
+import { Search, CalendarPlus, LayoutGrid, Plus } from "lucide-react";
 
 interface TaskPickerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSchedule: (card: EligibleCard) => void;
+  onCreateNew?: () => void;
 }
 
 export function TaskPickerDialog({
   open,
   onOpenChange,
   onSchedule,
+  onCreateNew,
 }: TaskPickerDialogProps) {
   const [search, setSearch] = useState("");
 
@@ -72,6 +74,22 @@ export function TaskPickerDialog({
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+
+        {/* Create new task button */}
+        {onCreateNew && (
+          <div className="px-4 pb-2">
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 text-[13px] font-medium"
+              onClick={() => {
+                onCreateNew();
+              }}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Create new task
+            </Button>
+          </div>
+        )}
 
         <ScrollArea className="max-h-[360px] px-4 pb-4">
           {eligibleCards === undefined ? (
