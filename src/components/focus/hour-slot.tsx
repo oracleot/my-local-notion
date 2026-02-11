@@ -2,6 +2,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import type { TimeBlock } from "@/types";
 import { TimeBlockCard } from "./time-block-card";
+import { CurrentTimeIndicator } from "./current-time-indicator";
 
 function formatHour(h: number): string {
   const suffix = h >= 12 ? "PM" : "AM";
@@ -76,7 +77,6 @@ export function HourSlot({
 
   const hasBlocks = blocks.length > 0;
   const isFull = remainingCapacity === 0;
-  const elapsedPercent = isCurrent ? (currentMinute / 60) * 100 : 0;
 
   // Sort blocks by order for horizontal rendering
   const sortedBlocks = [...blocks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -123,12 +123,7 @@ export function HourSlot({
         ${isOver && canAcceptDrop && !isPast ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : isDragOver && canAcceptDrop && !isPast ? "bg-muted/15" : isPast ? "" : "hover:bg-muted/30"}
       `}
     >
-      {isCurrent && (
-        <div
-          className="absolute inset-0 bg-primary/[0.03] pointer-events-none"
-          style={{ width: `${elapsedPercent}%` }}
-        />
-      )}
+      {isCurrent && <CurrentTimeIndicator />}
 
       <div
         className={`
@@ -139,13 +134,6 @@ export function HourSlot({
       >
         {formatHour(hour)}
       </div>
-
-      {isCurrent && (
-        <div
-          className="absolute h-[100%] w-[3px] bg-red-300 pointer-events-none z-10 rounded-full"
-          style={{ left: `calc(4rem + 0.75rem + (100% - 4rem - 0.75rem - 0.5rem) * ${currentMinute / 60})` }}
-        />
-      )}
 
       <div className="flex-1 pt-3 pl-3 pr-2">
         {hasBlocks ? (

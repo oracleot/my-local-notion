@@ -17,6 +17,7 @@ import {
   markSkippedBlocks,
   getRemainingCapacity,
   reorderBlocksInHour,
+  calculateEffectiveEnd,
 } from "@/lib/focus-helpers";
 import type { TimeBlock } from "@/types";
 import { TimeBlockCardOverlay } from "./time-block-card";
@@ -53,15 +54,15 @@ export function DayCalendar({
   });
   const [currentMinute, setCurrentMinute] = useState(() => new Date().getMinutes());
 
-  // Single 60s interval: auto-skip past blocks + refresh currentHour/currentMinute
+  // Efficient 1-minute tick for hour/minute updates and cleaning up skipped blocks
   useEffect(() => {
     function tick() {
       markSkippedBlocks(date);
       const now = new Date();
-      const today = now.toISOString().split("T")[0];
-      setCurrentHour(today === date ? now.getHours() : -1);
+      setCurrentHour(now.toISOString().split("T")[0] === date ? now.getHours() : -1);
       setCurrentMinute(now.getMinutes());
     }
+
     tick();
     const id = setInterval(tick, 60_000);
     return () => clearInterval(id);
@@ -99,10 +100,11 @@ export function DayCalendar({
 
     for (let h = dayStartHour; h < dayEndHour; h++) {
       const hourBlocks = blocksByHour.get(h) ?? [];
-      const usedMinutes = hourBlocks.reduce((sum, b) => sum + b.durationMinutes, 0);
-      // Base capacity: (60 - elapsed) for current hour, 60 for future hours
-      const baseCapacity = (isToday && h === currentHour) ? 60 - currentMinute : 60;
-      map.set(h, Math.max(0, baseCapacity - usedMinutes));
+      const effectiveEnd = calculateEffectiveEnd(hourBlocks);
+      const isCurrent = isToday && h === currentHour;
+      
+      const nextStart = isCurrent ? Math.max(currentMinute, effectiveEnd) : effectiveEnd;
+      map.set(h, Math.max(0, 60 - nextStart));
     }
     return map;
   }, [blocksByHour, date, currentHour, currentMinute, dayStartHour, dayEndHour]);

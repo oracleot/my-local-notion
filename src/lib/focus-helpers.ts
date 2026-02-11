@@ -63,6 +63,26 @@ export async function getUnscheduledCards(): Promise<EligibleCard[]> {
 }
 
 // ─── Time block CRUD ────────────────────────────────────────────────────────
+/**
+ * Calculates the effective end minute of the last block in the hour,
+ * accounting for gaps and explicit start times.
+ */
+export function calculateEffectiveEnd(blocks: TimeBlock[]): number {
+  const sorted = [...blocks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  let currentPos = 0;
+
+  if (sorted.length > 0 && sorted[0].startMinute > 0) {
+    currentPos = sorted[0].startMinute;
+  }
+
+  for (const b of sorted) {
+    const start = Math.max(currentPos, b.startMinute);
+    currentPos = start + b.durationMinutes;
+  }
+
+  return currentPos;
+}
+
 export async function getTimeBlocksForDate(date: string): Promise<TimeBlock[]> {
   return db.timeBlocks.where("date").equals(date).toArray();
 }
@@ -78,31 +98,32 @@ export async function getTimeBlocksForWeek(weekStartDate: string): Promise<TimeB
 /** Returns remaining capacity in minutes for a (date, hour) slot. Factors in elapsed time for current hour. */
 export async function getRemainingCapacity(date: string, hour: number): Promise<number> {
   const blocks = (await db.timeBlocks.where("date").equals(date).toArray()).filter((b) => b.startHour === hour);
-  const usedMinutes = blocks.reduce((sum, b) => sum + b.durationMinutes, 0);
+  
   const now = new Date();
   const isCurrentHour = date === now.toISOString().split("T")[0] && hour === now.getHours();
-  const baseCapacity = isCurrentHour ? 60 - now.getMinutes() : 60;
-  return Math.max(0, baseCapacity - usedMinutes);
+  const currentMinute = isCurrentHour ? now.getMinutes() : 0;
+
+  const effectiveEnd = calculateEffectiveEnd(blocks);
+  // For current hour, new task must start after 'now' AND after existing tasks
+  const nextStart = isCurrentHour ? Math.max(currentMinute, effectiveEnd) : effectiveEnd;
+
+  return Math.max(0, 60 - nextStart);
 }
 
 export async function createTimeBlock(cardId: string, pageId: string, date: string, startHour: number, durationMinutes = 60): Promise<TimeBlock> {
   const capacity = await getRemainingCapacity(date, startHour);
   if (durationMinutes > capacity) throw new Error(`Duration (${durationMinutes}m) exceeds capacity (${capacity}m)`);
+  
   // Calculate order: append to end of existing blocks in this slot
   const existing = (await db.timeBlocks.where("date").equals(date).toArray()).filter(b => b.startHour === startHour);
   const maxOrder = existing.length > 0 ? Math.max(...existing.map(b => b.order ?? 0)) : -1;
-  // For the current hour, capture the current minute; future hours start at 0
   const now = new Date();
   const isCurrentHour = date === now.toISOString().split("T")[0] && startHour === now.getHours();
-  // If we have existing tasks in the current hour, we want to maintain the "relative time"
-  // of the scheduling action. Logic: newStart = now.getMinutes() + lastBlock.duration
-  // See: user requirement about gaps for subsequent tasks.
-  let startMinute = isCurrentHour ? now.getMinutes() : 0;
-  
-  if (isCurrentHour && existing.length > 0) {
-    const lastBlock = existing.reduce((prev, curr) => (prev.order ?? 0) > (curr.order ?? 0) ? prev : curr);
-    startMinute = now.getMinutes() + lastBlock.durationMinutes;
-  }
+
+  // If current hour, start at now to create gap if needed. If future, start at 0 (renders sequentially).
+  // Note: calculateEffectiveEnd logic will handle stacking after existing blocks automatically
+  // because Math.max(currentPos, block.startMinute) handles overlaps.
+  const startMinute = isCurrentHour ? now.getMinutes() : 0;
   
   const block: TimeBlock = { id: crypto.randomUUID(), cardId, pageId, date, startHour, startMinute, durationMinutes, status: "scheduled", order: maxOrder + 1, createdAt: new Date(), updatedAt: new Date() };
   await db.timeBlocks.add(block);
@@ -126,9 +147,14 @@ export async function findAvailableHour(date: string, dayStartHour: number, dayE
   const currentMinute = isToday ? now.getMinutes() : 0;
 
   const getCapacity = (h: number) => {
-    const used = blocks.filter((b) => b.startHour === h).reduce((s, b) => s + b.durationMinutes, 0);
-    const baseCapacity = h === currentHour ? 60 - currentMinute : 60;
-    return Math.max(0, baseCapacity - used);
+    const hourBlocks = blocks.filter((b) => b.startHour === h);
+    const effectiveEnd = calculateEffectiveEnd(hourBlocks);
+    
+    // Check if this is the current hour
+    const isCurrent = isToday && h === currentHour;
+    const nextStart = isCurrent ? Math.max(currentMinute, effectiveEnd) : effectiveEnd;
+    
+    return Math.max(0, 60 - nextStart);
   };
 
   if (isToday && currentHour >= dayStartHour && currentHour < dayEndHour && getCapacity(currentHour) >= minCapacity) {
