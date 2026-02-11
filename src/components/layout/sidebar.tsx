@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/tooltip";
 import { PageTreeItem } from "@/components/shared/page-tree-item";
 import { DataTransferDialog } from "@/components/shared/data-transfer-dialog";
+import { LiveClock } from "./live-clock";
 import {
   Plus,
   Search,
@@ -170,6 +171,11 @@ export function Sidebar() {
           )}
         </div>
       </ScrollArea>
+
+      {/* ── Clock ── */}
+      <div className="border-t border-sidebar-border/50">
+        <LiveClock />
+      </div>
 
       {/* ── Settings / Import-Export ── */}
       <div className="border-t border-sidebar-border/50 px-2.5 py-2">
