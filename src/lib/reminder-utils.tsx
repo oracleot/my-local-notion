@@ -9,14 +9,6 @@ export function showReminderToast(
   block: TimeBlock,
   card: KanbanCard,
   boardName: string,
-  startSession: (params: {
-    cardId: string;
-    cardTitle: string;
-    boardName: string;
-    pageId: string;
-    timeBlockId?: string | null;
-    durationSeconds: number;
-  }) => void,
   audioEnabled: boolean
 ) {
   if (audioEnabled) playReminderChime();
@@ -45,19 +37,6 @@ export function showReminderToast(
     {
       id: `reminder-${block.id}`,
       duration: Infinity,
-      action: {
-        label: "Start",
-        onClick: () => {
-          startSession({
-            cardId: card.id,
-            cardTitle: card.title,
-            boardName,
-            pageId: block.pageId,
-            timeBlockId: block.id,
-            durationSeconds: block.durationMinutes * 60,
-          });
-        },
-      },
       cancel: {
         label: "Dismiss",
         onClick: () => {},
