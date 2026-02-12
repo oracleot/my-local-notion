@@ -1,22 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
-  getFocusSettings, createTimeBlock, updateTimeBlock, deleteTimeBlock,
-  findAvailableHour, getRemainingCapacity, createBreakBlock, type EligibleCard,
+  getFocusSettings, createTimeBlock, deleteTimeBlock,
+  findAvailableHour, createBreakBlock, getEffectiveBlockTime, type EligibleCard,
 } from "@/lib/focus-helpers";
+import { formatClockTime, getHourContext, getMondayOfWeek, getToday, moveBlockToHour } from "@/lib/focus-view-utils";
 import { createCard } from "@/lib/db-helpers";
 import { useAppStore } from "@/stores/app-store";
 import { db } from "@/lib/db";
 import type { TimeBlock, FocusSettings } from "@/types";
+import { toast } from "sonner";
 
 type ViewMode = "day" | "week";
-const getToday = () => new Date().toISOString().split("T")[0];
-const getMondayOfWeek = (dateStr: string) => {
-  const d = new Date(dateStr + "T00:00:00");
-  const day = d.getDay();
-  d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
-  return d.toISOString().split("T")[0];
-};
 
 export function useFocusView() {
   const [view, setView] = useState<ViewMode>("day");
@@ -31,16 +26,9 @@ export function useFocusView() {
   const [settings, setSettings] = useState<FocusSettings | null>(null);
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [durationPickerOpen, setDurationPickerOpen] = useState(false);
-  const [pendingDuration, setPendingDuration] = useState<{
-    card: EligibleCard; hour: number; capacity: number; isCurrentHour: boolean;
-  } | null>(null);
-  const [pendingBreak, setPendingBreak] = useState<{
-    hour: number; capacity: number; isCurrentHour: boolean;
-  } | null>(null);
-
-  const [pendingRescheduleDuration, setPendingRescheduleDuration] = useState<{
-    block: TimeBlock; hour: number; capacity: number; isCurrentHour: boolean;
-  } | null>(null);
+  const [pendingDuration, setPendingDuration] = useState<{ card: EligibleCard; hour: number; capacity: number; isCurrentHour: boolean } | null>(null);
+  const [pendingBreak, setPendingBreak] = useState<{ hour: number; capacity: number; isCurrentHour: boolean } | null>(null);
+  const [pendingRescheduleDuration, setPendingRescheduleDuration] = useState<{ block: TimeBlock; hour: number; capacity: number; isCurrentHour: boolean } | null>(null);
 
   const activeSession = useAppStore((s) => s.activeSession);
   const startSession = useAppStore((s) => s.startSession);
@@ -57,16 +45,11 @@ export function useFocusView() {
   const scheduledCount = todayBlocks?.length ?? 0;
   const totalMinutes = todayBlocks?.reduce((sum, b) => sum + b.durationMinutes, 0) ?? 0;
 
-  const handleSlotClick = useCallback((hour: number) => {
-    setPendingHour(hour);
-    setTaskPickerOpen(true);
-  }, []);
+  const handleSlotClick = useCallback((hour: number) => { setPendingHour(hour); setTaskPickerOpen(true); }, []);
 
   const handleAddBreak = useCallback(async (hour: number) => {
-    const capacity = await getRemainingCapacity(selectedDate, hour);
-    const now = new Date();
-    const isToday = selectedDate === now.toISOString().split("T")[0];
-    setPendingBreak({ hour, capacity, isCurrentHour: isToday && hour === now.getHours() });
+    const context = await getHourContext(selectedDate, hour);
+    setPendingBreak(context);
     setDurationPickerOpen(true);
   }, [selectedDate]);
 
@@ -89,10 +72,8 @@ export function useFocusView() {
 
     // Proceed to schedule the new card
     const targetHour = pendingHour ?? await findAvailableHour(selectedDate, settings.dayStartHour, settings.dayEndHour);
-    const capacity = await getRemainingCapacity(selectedDate, targetHour);
-    const now = new Date();
-    const isToday = selectedDate === now.toISOString().split("T")[0];
-    setPendingDuration({ card: eligibleCard, hour: targetHour, capacity, isCurrentHour: isToday && targetHour === now.getHours() });
+    const context = await getHourContext(selectedDate, targetHour);
+    setPendingDuration({ card: eligibleCard, ...context });
     setPendingHour(null);
     setCreateTaskOpen(false);
     setTaskPickerOpen(false);
@@ -102,17 +83,42 @@ export function useFocusView() {
     const card = await db.kanbanCards.get(block.cardId);
     const page = await db.pages.get(block.pageId);
     if (!card || !page) return;
-    startSession({ cardId: card.id, cardTitle: card.title, boardName: page.title || "Untitled Board",
-      pageId: page.id, timeBlockId: block.id, durationSeconds: block.durationMinutes * 60 });
+    const effectiveTime = await getEffectiveBlockTime(block);
+    if (!effectiveTime) {
+      toast("Unable to determine the scheduled time for this block.");
+      return;
+    }
+
+    const now = Date.now();
+    const originalSeconds = block.durationMinutes * 60;
+    const adjustedSeconds = Math.floor((effectiveTime.end.getTime() - now) / 1000);
+    const finalSeconds = Math.min(originalSeconds, adjustedSeconds);
+
+    if (finalSeconds <= 0) {
+      toast("This scheduled session has already ended.");
+      return;
+    }
+
+    if (finalSeconds < originalSeconds) {
+      const adjustedMinutes = Math.ceil(finalSeconds / 60);
+      toast(`Session adjusted to ${adjustedMinutes}m to match scheduled end time (${formatClockTime(effectiveTime.end)}).`);
+    }
+
+    startSession({
+      cardId: card.id,
+      cardTitle: card.title,
+      boardName: page.title || "Untitled Board",
+      pageId: page.id,
+      timeBlockId: block.id,
+      durationSeconds: finalSeconds,
+    });
   }, [startSession]);
 
   const handleSchedule = useCallback(async (ec: EligibleCard) => {
     if (!settings) return;
     const targetHour = pendingHour ?? await findAvailableHour(selectedDate, settings.dayStartHour, settings.dayEndHour);
-    const capacity = await getRemainingCapacity(selectedDate, targetHour);
-    const now = new Date();
-    const isToday = selectedDate === now.toISOString().split("T")[0];
-    setPendingDuration({ card: ec, hour: targetHour, capacity, isCurrentHour: isToday && targetHour === now.getHours() });
+    const context = await getHourContext(selectedDate, targetHour);
+    setPendingDuration({ card: ec, ...context });
     setPendingHour(null);
     setTaskPickerOpen(false);
   }, [pendingHour, settings, selectedDate]);
@@ -125,30 +131,20 @@ export function useFocusView() {
     }
   }, [pendingDuration, pendingRescheduleDuration, taskPickerOpen, createTaskOpen, timeSlotPickerOpen, durationPickerOpen]);
 
-  const handleScheduleWithTimePicker = useCallback((ec: EligibleCard) => {
-    setPendingCard(ec);
-    setTimeSlotPickerOpen(true);
-  }, []);
+  const handleScheduleWithTimePicker = useCallback((ec: EligibleCard) => { setPendingCard(ec); setTimeSlotPickerOpen(true); }, []);
 
   const handleTimeSlotSelected = useCallback(async (hour: number) => {
     if (!settings) return;
     if (pendingRescheduleBlock) {
-      const capacity = await getRemainingCapacity(selectedDate, hour);
-      const now = new Date();
-      const isToday = selectedDate === now.toISOString().split("T")[0];
-      setPendingRescheduleDuration({
-        block: pendingRescheduleBlock, hour, capacity,
-        isCurrentHour: isToday && hour === now.getHours(),
-      });
+      const context = await getHourContext(selectedDate, hour);
+      setPendingRescheduleDuration({ block: pendingRescheduleBlock, ...context });
       setPendingRescheduleBlock(null);
       setTimeSlotPickerOpen(false);
       return;
     }
     if (!pendingCard) return;
-    const capacity = await getRemainingCapacity(selectedDate, hour);
-    const now = new Date();
-    const isToday = selectedDate === now.toISOString().split("T")[0];
-    setPendingDuration({ card: pendingCard, hour, capacity, isCurrentHour: isToday && hour === now.getHours() });
+    const context = await getHourContext(selectedDate, hour);
+    setPendingDuration({ card: pendingCard, ...context });
     setPendingCard(null);
     setTimeSlotPickerOpen(false);
   }, [pendingCard, pendingRescheduleBlock, settings, selectedDate]);
@@ -173,13 +169,7 @@ export function useFocusView() {
     setDurationPickerOpen(false);
   }, [pendingDuration, pendingBreak, pendingRescheduleDuration, selectedDate]);
 
-  const handleMoveBlock = useCallback(async (blockId: string, newHour: number) => {
-    // Assign order at end of target hour's blocks
-    const allBlocks = await db.timeBlocks.where("date").equals(selectedDate).toArray();
-    const targetBlocks = allBlocks.filter(b => b.startHour === newHour);
-    const maxOrder = targetBlocks.length > 0 ? Math.max(...targetBlocks.map(b => b.order ?? 0)) : -1;
-    await updateTimeBlock(blockId, { startHour: newHour, order: maxOrder + 1 });
-  }, [selectedDate]);
+  const handleMoveBlock = useCallback(async (blockId: string, newHour: number) => { await moveBlockToHour(blockId, newHour, selectedDate); }, [selectedDate]);
 
   const navigateDay = useCallback((delta: number) => {
     const d = new Date(selectedDate + "T00:00:00");
@@ -199,11 +189,11 @@ export function useFocusView() {
 
   return {
     view, setView, selectedDate, weekStart, taskPickerOpen, setTaskPickerOpen, timeSlotPickerOpen, setTimeSlotPickerOpen,
-    pendingCard, pendingRescheduleBlock, settingsOpen, setSettingsOpen, createTaskOpen, setCreateTaskOpen, 
-    settings, setSettings, activeSession, scheduledCount, totalMinutes, durationPickerOpen, setDurationPickerOpen, 
-    pendingDuration, pendingBreak, pendingRescheduleDuration, handleSlotClick, handleAddBreak, handleCreateAndSchedule, handleStartBlock, 
-    handleSchedule, handleScheduleWithTimePicker, handleTimeSlotSelected, handleDurationSelected, 
-    handleScheduleFromSidebar: handleScheduleWithTimePicker, handleRescheduleBlock, handleMoveBlock, 
+    pendingCard, pendingRescheduleBlock, settingsOpen, setSettingsOpen, createTaskOpen, setCreateTaskOpen, settings, setSettings,
+    activeSession, scheduledCount, totalMinutes, durationPickerOpen, setDurationPickerOpen, pendingDuration, pendingBreak,
+    pendingRescheduleDuration, handleSlotClick, handleAddBreak, handleCreateAndSchedule, handleStartBlock, handleSchedule,
+    handleScheduleWithTimePicker, handleTimeSlotSelected, handleDurationSelected,
+    handleScheduleFromSidebar: handleScheduleWithTimePicker, handleRescheduleBlock, handleMoveBlock,
     navigateDay, navigateWeek, handleDayClickFromWeek, goToToday,
   };
 }

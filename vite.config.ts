@@ -11,6 +11,10 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  test: {
+    environment: "jsdom",
+    setupFiles: "./src/test/setup.ts",
+  },
   build: {
     // BlockNote is ~1.5 MB; it's lazy-loaded so the warning is cosmetic
     chunkSizeWarningLimit: 1600,
