@@ -5,6 +5,7 @@ import { Sidebar } from "./sidebar";
 import { SearchDialog } from "@/components/shared/search-dialog";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { FocusTimerBadge } from "@/components/focus/focus-timer-badge";
+import { FocusEntryButton } from "@/components/focus/focus-entry-button";
 import { useGlobalShortcuts } from "@/lib/use-global-shortcuts";
 import { useUnstartedTaskReminders } from "@/lib/use-unstarted-reminders";
 import { Toaster } from "sonner";
@@ -27,6 +28,8 @@ export function AppLayout() {
   const { sidebarOpen, sidebarWidth, setSidebarWidth, toggleSidebar } =
     useAppStore();
   const zenMode = useAppStore((s) => s.zenMode);
+  const activeSession = useAppStore((s) => s.activeSession);
+  const activePageType = useAppStore((s) => s.activePageType);
   const isResizing = useRef(false);
 
   const handleMouseDown = useCallback(
@@ -85,7 +88,7 @@ export function AppLayout() {
         {/* ── Main content area ── */}
         <main className="flex min-w-0 flex-1 flex-col">
           {/* Top bar with sidebar toggle and theme toggle */}
-          <div className="flex items-center justify-between px-3 pt-2.5 pb-1">
+          <div className="relative flex items-center justify-between px-3 pt-3.5 pb-2">
             <div>
               {!sidebarOpen && (
                 <Tooltip>
@@ -108,8 +111,17 @@ export function AppLayout() {
                 </Tooltip>
               )}
             </div>
+            {activeSession && (
+              <div className="mt-3 pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="pointer-events-auto flex min-w-0 items-center gap-1.5">
+                  <FocusTimerBadge />
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-1.5">
-              <FocusTimerBadge />
+              {!activeSession && activePageType === "kanban" && (
+                <FocusEntryButton />
+              )}
               <ThemeToggle />
             </div>
           </div>

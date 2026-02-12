@@ -112,10 +112,12 @@ export function useFocusTimer() {
   }, [extend]);
 
   const isComplete = activeSession !== null && remainingSeconds <= 0;
+  const totalSeconds = activeSession?.totalSeconds ?? 0;
 
   return {
     activeSession,
     remainingSeconds,
+    totalSeconds,
     isRunning: activeSession?.isRunning ?? false,
     isPaused: activeSession !== null && !activeSession.isRunning && !isComplete,
     isComplete,
