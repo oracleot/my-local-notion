@@ -23,8 +23,7 @@ Implement the requested change in the current repository, making the smallest co
 
 ## Hard Repo Constraints
 
-- CRITICAL: Never create or allow any component/file/module to exceed 200 lines of code.
-  - If approaching ~150 lines, refactor immediately into smaller components/hooks/utils.
+- CRITICAL: Never create or allow any component/file/module to exceed 200 lines of code. If approaching ~150 lines, refactor immediately into smaller components/hooks/utils.
 - Do not introduce new colors, font families, shadows, or visual themes unless explicitly requested.
 
 ## Git Branching (Mandatory)
@@ -73,6 +72,8 @@ Before you change any code, you MUST get the latest changes from main first, the
 6. Recap
 	- Summarize what changed, where, and how to verify.
 	- Call out any tradeoffs/risks and next optional steps.
+
+7. Update `ideas_backlog.md` - Mark the idea as implemented. - If the idea is not fully implemented, update the checklist with what remains.
 
 ## Skill Usage
 

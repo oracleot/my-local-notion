@@ -77,6 +77,7 @@ export function HourSlot({
 
   const hasBlocks = blocks.length > 0;
   const isFull = remainingCapacity === 0;
+  const isDraggable = !isPast && !isCurrent;
 
   // Sort blocks by order for horizontal rendering
   const sortedBlocks = [...blocks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -151,6 +152,7 @@ export function HourSlot({
                       onStart={() => onStartBlock(item.block!)}
                       onDelete={() => onDeleteBlock(item.block!.id)}
                       isPast={isPast}
+                      isDraggable={isDraggable}
                       compact={item.block.durationMinutes < 30}
                       isActiveBlock={activeBlockId === item.block.id}
                     />

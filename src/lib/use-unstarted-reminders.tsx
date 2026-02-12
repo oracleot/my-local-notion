@@ -72,7 +72,7 @@ export function useUnstartedTaskReminders() {
           const page = await db.pages.get(block.pageId);
           if (!card || !page) continue;
 
-          showReminderToast(block, card, page.title || "Untitled Board", startSession, audioEnabled);
+          showReminderToast(block, card, page.title || "Untitled Board", audioEnabled);
           
           const timestamp = Date.now();
           lastNotifiedAt.current.set(block.id, timestamp);

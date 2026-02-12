@@ -14,11 +14,12 @@ interface TimeBlockCardProps {
   onDelete: () => void;
   onReschedule?: () => void;
   isPast?: boolean;
+  isDraggable?: boolean;
   compact?: boolean;
   isActiveBlock?: boolean;
 }
 
-export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast, compact, isActiveBlock }: TimeBlockCardProps) {
+export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast, isDraggable = true, compact, isActiveBlock }: TimeBlockCardProps) {
   const isBreak = isBreakBlock(block);
   const card = useLiveQuery(
     () => (isBreak ? undefined : db.kanbanCards.get(block.cardId)),
@@ -41,7 +42,7 @@ export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast, 
     isDragging,
   } = useSortable({
     id: block.id,
-    disabled: isPast,
+    disabled: isPast || !isDraggable,
   });
 
     const style = {
@@ -71,13 +72,17 @@ export function TimeBlockCard({ block, onStart, onDelete, onReschedule, isPast, 
         }
       `}
     >
-      <button
-        {...attributes}
-        {...listeners}
-        className="touch-none shrink-0 rounded p-0.5 text-muted-foreground/30 transition-colors hover:text-muted-foreground/60 cursor-grab active:cursor-grabbing"
-      >
-        <GripVertical className="h-3 w-3" />
-      </button>
+      {isDraggable ? (
+        <button
+          {...attributes}
+          {...listeners}
+          className="touch-none shrink-0 rounded p-0.5 text-muted-foreground/30 transition-colors hover:text-muted-foreground/60 cursor-grab active:cursor-grabbing"
+        >
+          <GripVertical className="h-3 w-3" />
+        </button>
+      ) : (
+        <span className="shrink-0" aria-hidden="true" />
+      )}
 
       <div className="min-w-0 flex-1">
         <p className="truncate text-[12px] font-medium leading-tight">
