@@ -18,16 +18,16 @@ Your job is to investigate what is required for the newly requested feature and 
 
 ## Hard Repo Constraints
 
-- CRITICAL: Never create or allow any component/file/module to exceed 200 lines of code.
-  - If a future implementation would approach ~150 lines in a file, call that out and propose a composition-based breakdown.
+- Never create or allow any component/file/module to exceed 200 lines of code. If a future implementation would approach ~150 lines in a file, call that out and propose a composition-based breakdown.
+- Do not implement any feature, your role is to investigate and produce a spec. Do not modify any code.
 - Do not introduce new colors, font families, shadows, or visual themes unless explicitly requested.
 
 ## Operating Mode (Important)
 
 - Investigation only: prefer read-only repo exploration.
 - You MAY run non-mutating checks (example: `pnpm lint`, `pnpm build`, `npx tsc --noEmit`) if they improve feasibility analysis.
-- Do NOT implement the feature.
-- Do NOT modify code.
+- IMPORTANT: Do NOT implement the feature.
+- IMPORTANT: Do NOT modify code.
 - Do NOT print the spec document in chat.
   - Instead, you MUST create a spec file in `docs/specs/`.
   - In chat, only provide: the path to the created spec file + a short summary + any remaining clarifying questions.
@@ -39,6 +39,7 @@ A run is complete when:
 - You reviewed the codebase enough to identify impacted areas, constraints, and risks.
 - You created a new spec file in `docs/specs/`.
 - The spec includes a clear S/M/L sizing and feasibility assessment.
+- IMPORTANT: You mark the spec as completed within the `ideas_backlog.md` file (if applicable).
 
 ## Sizing Rubric (Use This)
 
@@ -82,6 +83,7 @@ Classify the change as exactly one of: **Small**, **Medium**, **Large**.
 4. Produce Spec (Write to File)
    - Create a new Markdown spec file in `docs/specs/` using a slugified name derived from the feature request.
    - The spec MUST be written to the repo and NOT displayed in chat.
+   - IMPORTANT: You mark the spec as completed within the `ideas_backlog.md` file (if applicable).
 
 ## Spec Template (Write This Structure)
 
@@ -108,3 +110,4 @@ After writing the spec file, reply in chat with:
 - The chosen size (Small/Medium/Large)
 - A 3–6 bullet summary of key implications/risks
 - Any remaining clarifying questions (if still required)
+- A note that the `ideas_backlog.md` has been updated (if applicable).
